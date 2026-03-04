@@ -18,6 +18,8 @@ type Listing = {
   condition: string;
   repairs: boolean;
   fins_included: boolean;
+  fin_setup: string | null;
+  construction: string | null;
   whatsapp_phone: string | null;
   created_at: string;
 };
@@ -47,7 +49,7 @@ export default function ListingDetailsPage() {
         .select(
           `id, title, description, price_ils, city, region, board_type,
            length_ft, volume_l, brand, condition, repairs, fins_included,
-           whatsapp_phone, created_at`
+           fin_setup, construction, whatsapp_phone, created_at`
         )
         .eq("id", params.id)
         .single();
@@ -61,11 +63,12 @@ export default function ListingDetailsPage() {
       const listingData = data as Listing;
       setListing(listingData);
 
-      // Load images
+      // Load images: primary first, then by sort_order
       const { data: imagesData, error: imagesError } = await supabase
         .from("listing_images")
-        .select("storage_path, sort_order")
+        .select("storage_path, sort_order, is_primary")
         .eq("listing_id", params.id)
+        .order("is_primary", { ascending: false })
         .order("sort_order", { ascending: true });
 
       if (!imagesError && imagesData) {
@@ -86,13 +89,11 @@ export default function ListingDetailsPage() {
 
   function getWhatsappUrl(listing: Listing) {
     if (!listing.whatsapp_phone) return null;
-
     const currentUrl =
       typeof window !== "undefined" ? window.location.href : "";
     const message = `Hi, I saw your surfboard listing "${listing.title}" on Surf Marketplace. Is it still available? ${currentUrl}`;
     const encodedMessage = encodeURIComponent(message);
-    const phone = listing.whatsapp_phone.replace(/[^0-9]/g, "");
-
+    const phone = listing.whatsapp_phone.replace(/\D/g, "");
     return `https://wa.me/${phone}?text=${encodedMessage}`;
   }
 
@@ -153,10 +154,12 @@ export default function ListingDetailsPage() {
           {listing.brand && <p>Brand: {listing.brand}</p>}
           {listing.length_ft !== null && <p>Length: {listing.length_ft} ft</p>}
           {listing.volume_l !== null && <p>Volume: {listing.volume_l} L</p>}
+          {listing.fin_setup && <p>Fin setup: {listing.fin_setup}</p>}
+          {listing.construction && <p>Construction: {listing.construction}</p>}
           <p>Repairs: {listing.repairs ? "Yes" : "No"}</p>
           <p>Fins included: {listing.fins_included ? "Yes" : "No"}</p>
           {listing.whatsapp_phone && (
-            <p>WhatsApp phone: {listing.whatsapp_phone}</p>
+            <p>WhatsApp: {listing.whatsapp_phone}</p>
           )}
           <p className="text-xs text-gray-400">
             Posted at {new Date(listing.created_at).toLocaleString()}

@@ -1,6 +1,7 @@
 "use client";
 
-import { listingSchema } from "@/lib/validations/listing";
+import { listingSchema, BOARD_TYPES, REGIONS, CONDITIONS, FIN_SETUPS, CONSTRUCTIONS, LENGTH_FT_RANGES, TITLE_MIN, TITLE_MAX, PRICE_MAX, VOLUME_L_MAX } from "@/lib/validations/listing";
+import { toE164, COUNTRY_OPTIONS, DEFAULT_COUNTRY_CODE } from "@/lib/phone";
 import { FormEvent, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -16,14 +17,17 @@ export default function EditListingPage() {
   const [description, setDescription] = useState("");
   const [priceIls, setPriceIls] = useState<number | "">("");
   const [city, setCity] = useState("");
-  const [region, setRegion] = useState("Center");
-  const [boardType, setBoardType] = useState("Shortboard");
+  const [region, setRegion] = useState<(typeof REGIONS)[number]>("Center");
+  const [boardType, setBoardType] = useState<(typeof BOARD_TYPES)[number]>("Shortboard");
   const [lengthFt, setLengthFt] = useState<number | "">("");
   const [volumeL, setVolumeL] = useState<number | "">("");
   const [brand, setBrand] = useState("");
-  const [condition, setCondition] = useState("Good");
+  const [condition, setCondition] = useState<(typeof CONDITIONS)[number]>("Used (Normal)");
   const [repairs, setRepairs] = useState(false);
   const [finsIncluded, setFinsIncluded] = useState(false);
+  const [finSetup, setFinSetup] = useState("");
+  const [construction, setConstruction] = useState("");
+  const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY_CODE);
   const [whatsappPhone, setWhatsappPhone] = useState("");
 
   useEffect(() => {
@@ -33,7 +37,6 @@ export default function EditListingPage() {
         router.replace("/login");
         return;
       }
-
       setCheckingAuth(false);
 
       const { data, error } = await supabase
@@ -46,7 +49,6 @@ export default function EditListingPage() {
         setStatus("Listing not found.");
         return;
       }
-
       if (data.user_id !== userData.user.id) {
         router.replace("/my-listings");
         return;
@@ -56,17 +58,27 @@ export default function EditListingPage() {
       setDescription(data.description ?? "");
       setPriceIls(data.price_ils ?? "");
       setCity(data.city ?? "");
-      setRegion(data.region ?? "Center");
-      setBoardType(data.board_type ?? "Shortboard");
+      setRegion((data.region as (typeof REGIONS)[number]) ?? "Center");
+      setBoardType((data.board_type === "Softtop" ? "Softboard" : data.board_type) as (typeof BOARD_TYPES)[number]);
       setLengthFt(data.length_ft ?? "");
       setVolumeL(data.volume_l ?? "");
       setBrand(data.brand ?? "");
-      setCondition(data.condition ?? "Good");
+      setCondition(
+        (CONDITIONS as readonly string[]).includes(data.condition)
+          ? (data.condition as (typeof CONDITIONS)[number])
+          : "Used (Normal)"
+      );
       setRepairs(data.repairs ?? false);
       setFinsIncluded(data.fins_included ?? false);
-      setWhatsappPhone(data.whatsapp_phone ?? "");
+      setFinSetup(data.fin_setup ?? "");
+      setConstruction(data.construction ?? "");
+      const phone = data.whatsapp_phone ?? "";
+      setWhatsappPhone(phone);
+      if (phone.startsWith("+972")) setCountryCode("+972");
+      else if (phone.startsWith("+1")) setCountryCode("+1");
+      else if (phone.startsWith("+44")) setCountryCode("+44");
+      else setCountryCode(DEFAULT_COUNTRY_CODE);
     }
-
     if (params.id) load();
   }, [params.id, router]);
 
@@ -75,31 +87,40 @@ export default function EditListingPage() {
     setLoading(true);
     setStatus(null);
 
+    const e164 = toE164(whatsappPhone, countryCode);
+    if (!e164) {
+      setStatus("Invalid phone. Use 9 digits for Israel (e.g. 0501234567) or E.164 (8–15 digits).");
+      setLoading(false);
+      return;
+    }
+
     const raw = {
-        title,
-        description: description || undefined,
-        price_ils: priceIls === "" ? 0 : Number(priceIls),
-        city,
-        region,
-        board_type: boardType,
-        length_ft: lengthFt === "" ? null : Number(lengthFt),
-        volume_l: volumeL === "" ? null : Number(volumeL),
-        brand: brand || undefined,
-        condition,
-        repairs,
-        fins_included: finsIncluded,
-        whatsapp_phone: whatsappPhone,
-      };
-  
-      const parsed = listingSchema.safeParse(raw);
-      if (!parsed.success) {
-        const first = parsed.error.flatten().fieldErrors;
-        const msg = Object.values(first).flat().join(" ") || "Invalid fields.";
-        setStatus(msg);
-        setLoading(false);
-        return;
-      }
-  
+      title,
+      description: description || undefined,
+      price_ils: priceIls === "" ? 0 : Number(priceIls),
+      city,
+      region,
+      board_type: boardType,
+      length_ft: lengthFt === "" ? null : Number(lengthFt),
+      volume_l: volumeL === "" ? null : Number(volumeL),
+      brand: brand || undefined,
+      condition,
+      repairs,
+      fins_included: finsIncluded,
+      fin_setup: finSetup || null,
+      construction: construction || null,
+      whatsapp_phone: e164,
+    };
+
+    const parsed = listingSchema.safeParse(raw);
+    if (!parsed.success) {
+      const first = parsed.error.flatten().fieldErrors;
+      const msg = Object.values(first).flat().join(" ") || "Invalid fields.";
+      setStatus(msg);
+      setLoading(false);
+      return;
+    }
+
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError || !userData.user) {
       setStatus("You must be logged in.");
@@ -111,18 +132,20 @@ export default function EditListingPage() {
       .from("listings")
       .update({
         title,
-        description,
+        description: description || null,
         price_ils: priceIls === "" ? null : Number(priceIls),
         city,
         region,
         board_type: boardType,
         length_ft: lengthFt === "" ? null : Number(lengthFt),
         volume_l: volumeL === "" ? null : Number(volumeL),
-        brand,
+        brand: brand || null,
         condition,
         repairs,
         fins_included: finsIncluded,
-        whatsapp_phone: whatsappPhone,
+        fin_setup: finSetup || null,
+        construction: construction || null,
+        whatsapp_phone: e164,
       })
       .eq("id", params.id)
       .eq("user_id", userData.user.id);
@@ -132,11 +155,12 @@ export default function EditListingPage() {
       setLoading(false);
       return;
     }
-
     setStatus("Listing updated successfully!");
     setLoading(false);
     setTimeout(() => router.push(`/listing/${params.id}`), 800);
   }
+
+  const lengthRange = LENGTH_FT_RANGES[boardType];
 
   if (checkingAuth) {
     return (
@@ -158,6 +182,8 @@ export default function EditListingPage() {
                 id="title"
                 type="text"
                 required
+                minLength={TITLE_MIN}
+                maxLength={TITLE_MAX}
                 className="w-full rounded border px-3 py-2 text-sm"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -170,6 +196,7 @@ export default function EditListingPage() {
                 type="number"
                 required
                 min={0}
+                max={PRICE_MAX}
                 className="w-full rounded border px-3 py-2 text-sm"
                 value={priceIls}
                 onChange={(e) => setPriceIls(e.target.value === "" ? "" : Number(e.target.value))}
@@ -177,66 +204,37 @@ export default function EditListingPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="city">City</label>
-              <input
-                id="city"
-                type="text"
-                required
-                className="w-full rounded border px-3 py-2 text-sm"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-              />
+              <input id="city" type="text" required className="w-full rounded border px-3 py-2 text-sm" value={city} onChange={(e) => setCity(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="region">Region</label>
-              <select
-                id="region"
-                className="w-full rounded border px-3 py-2 text-sm"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-              >
-                <option value="Center">Center</option>
-                <option value="Sharon">Sharon</option>
-                <option value="North">North</option>
-                <option value="South">South</option>
-                <option value="Jerusalem">Jerusalem</option>
+              <select id="region" className="w-full rounded border px-3 py-2 text-sm" value={region} onChange={(e) => setRegion(e.target.value as (typeof REGIONS)[number])}>
+                {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="boardType">Board type</label>
-              <select
-                id="boardType"
-                className="w-full rounded border px-3 py-2 text-sm"
-                value={boardType}
-                onChange={(e) => setBoardType(e.target.value)}
-              >
-                <option value="Shortboard">Shortboard</option>
-                <option value="Fish">Fish</option>
-                <option value="Longboard">Longboard</option>
-                <option value="Softtop">Softtop</option>
-                <option value="Other">Other</option>
+              <select id="boardType" className="w-full rounded border px-3 py-2 text-sm" value={boardType} onChange={(e) => setBoardType(e.target.value as (typeof BOARD_TYPES)[number])}>
+                {BOARD_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="brand">Brand</label>
-              <input
-                id="brand"
-                type="text"
-                className="w-full rounded border px-3 py-2 text-sm"
-                value={brand}
-                onChange={(e) => setBrand(e.target.value)}
-              />
+              <input id="brand" type="text" className="w-full rounded border px-3 py-2 text-sm" value={brand} onChange={(e) => setBrand(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="lengthFt">Length (ft)</label>
               <input
                 id="lengthFt"
                 type="number"
-                min={0}
+                min={lengthRange[0]}
+                max={lengthRange[1]}
                 step="0.1"
                 className="w-full rounded border px-3 py-2 text-sm"
                 value={lengthFt}
                 onChange={(e) => setLengthFt(e.target.value === "" ? "" : Number(e.target.value))}
               />
+              <p className="mt-0.5 text-xs text-gray-500">{boardType}: {lengthRange[0]}–{lengthRange[1]} ft</p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="volumeL">Volume (L)</label>
@@ -244,6 +242,7 @@ export default function EditListingPage() {
                 id="volumeL"
                 type="number"
                 min={0}
+                max={VOLUME_L_MAX}
                 step="0.1"
                 className="w-full rounded border px-3 py-2 text-sm"
                 value={volumeL}
@@ -252,30 +251,42 @@ export default function EditListingPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="condition">Condition</label>
-              <select
-                id="condition"
-                className="w-full rounded border px-3 py-2 text-sm"
-                value={condition}
-                onChange={(e) => setCondition(e.target.value)}
-              >
-                <option value="New">New</option>
-                <option value="Good">Good</option>
-                <option value="Fair">Fair</option>
+              <select id="condition" className="w-full rounded border px-3 py-2 text-sm" value={condition} onChange={(e) => setCondition(e.target.value as (typeof CONDITIONS)[number])}>
+                {CONDITIONS.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="whatsappPhone">WhatsApp phone</label>
-              <input
-                id="whatsappPhone"
-                type="tel"
-                required
-                className="w-full rounded border px-3 py-2 text-sm"
-                value={whatsappPhone}
-                onChange={(e) => setWhatsappPhone(e.target.value)}
-              />
+              <label className="block text-sm font-medium mb-1" htmlFor="finSetup">Fin setup</label>
+              <select id="finSetup" className="w-full rounded border px-3 py-2 text-sm" value={finSetup} onChange={(e) => setFinSetup(e.target.value)}>
+                <option value="">—</option>
+                {FIN_SETUPS.map((f) => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1" htmlFor="construction">Construction</label>
+              <select id="construction" className="w-full rounded border px-3 py-2 text-sm" value={construction} onChange={(e) => setConstruction(e.target.value)}>
+                <option value="">—</option>
+                {CONSTRUCTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-1">WhatsApp phone</label>
+              <div className="flex gap-2">
+                <select className="rounded border px-2 py-2 text-sm" value={countryCode} onChange={(e) => setCountryCode(e.target.value)}>
+                  {COUNTRY_OPTIONS.map((c) => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
+                </select>
+                <input
+                  type="tel"
+                  required
+                  placeholder={countryCode === "+972" ? "0501234567" : "Phone number"}
+                  className="flex-1 rounded border px-3 py-2 text-sm"
+                  value={whatsappPhone}
+                  onChange={(e) => setWhatsappPhone(e.target.value)}
+                />
+              </div>
             </div>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={repairs} onChange={(e) => setRepairs(e.target.checked)} />
               Repairs done
@@ -287,19 +298,9 @@ export default function EditListingPage() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1" htmlFor="description">Description</label>
-            <textarea
-              id="description"
-              className="w-full rounded border px-3 py-2 text-sm"
-              rows={4}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+            <textarea id="description" maxLength={2000} className="w-full rounded border px-3 py-2 text-sm" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-          >
+          <button type="submit" disabled={loading} className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
             {loading ? "Saving..." : "Save changes"}
           </button>
         </form>
