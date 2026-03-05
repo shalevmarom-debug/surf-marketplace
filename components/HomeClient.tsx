@@ -27,11 +27,11 @@ type ListingWithImage = {
   length_ft?: number | null;
   volume_l?: number | null;
   primaryImageUrl: string | null;
+  displayCity: string;
 };
 
 type HomeClientProps = {
   listingsWithImage: ListingWithImage[];
-  displayCity: (listing: ListingWithImage) => string;
   error: boolean;
   citiesWithCount: { city: string; count: number }[];
   defaultRegion: string;
@@ -66,7 +66,6 @@ function buildQueryString(params: Record<string, string>, overrides?: Record<str
 
 export function HomeClient({
   listingsWithImage,
-  displayCity,
   error,
   citiesWithCount,
   defaultRegion: defaultRegionProp,
@@ -245,7 +244,7 @@ export function HomeClient({
               sold_at={listing.sold_at}
               created_at={listing.created_at}
               primaryImageUrl={listing.primaryImageUrl}
-              displayCity={displayCity(listing)}
+              displayCity={listing.displayCity}
               length_ft={listing.length_ft}
               volume_l={listing.volume_l}
             />

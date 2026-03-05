@@ -24,10 +24,10 @@ type Listing = {
   volume_l?: number | null;
 };
 
-function displayCity(listing: Listing): string {
+function getDisplayCity(listing: Listing): string {
   return listing.city_he !== "אחר" ? (listing.city_he ?? listing.city ?? "") : (listing.city_other?.trim() || "אחר");
 }
-type ListingWithImage = Listing & { primaryImageUrl: string | null };
+type ListingWithImage = Listing & { primaryImageUrl: string | null; displayCity: string };
 type HomeProps = {
   searchParams?: Promise<{
     region?: string;
@@ -70,9 +70,9 @@ export default async function Home({ searchParams }: HomeProps) {
   for (const row of cityRows ?? []) {
     const ch = (row as { city_he?: string | null; city_other?: string | null }).city_he;
     const co = (row as { city_he?: string | null; city_other?: string | null }).city_other;
-    const displayCity = ch !== "אחר" ? (ch ?? "") : (co?.trim() || "אחר");
-    if (!displayCity) continue;
-    displayCityCounts.set(displayCity, (displayCityCounts.get(displayCity) ?? 0) + 1);
+    const cityLabel = ch !== "אחר" ? (ch ?? "") : (co?.trim() || "אחר");
+    if (!cityLabel) continue;
+    displayCityCounts.set(cityLabel, (displayCityCounts.get(cityLabel) ?? 0) + 1);
   }
   const citiesWithCount: { city: string; count: number }[] = Array.from(displayCityCounts.entries())
     .filter(([, count]) => count > 0)
@@ -124,7 +124,7 @@ export default async function Home({ searchParams }: HomeProps) {
     const primaryImageUrl = first
       ? supabase.storage.from("listing-images").getPublicUrl(first.storage_path).data.publicUrl
       : null;
-    return { ...listing, primaryImageUrl };
+    return { ...listing, primaryImageUrl, displayCity: getDisplayCity(listing) };
   });
   return (
     <main className="min-h-screen bg-[var(--background)]">
@@ -145,7 +145,6 @@ export default async function Home({ searchParams }: HomeProps) {
         <Suspense fallback={<p className="text-[var(--surf-muted-text)]">Loading…</p>}>
           <HomeClient
             listingsWithImage={listingsWithImage}
-            displayCity={displayCity}
             error={!!error}
             citiesWithCount={citiesWithCount}
             defaultRegion={region}
