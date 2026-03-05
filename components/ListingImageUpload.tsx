@@ -33,7 +33,6 @@ export function ListingImageUpload({
   onPrimaryChange,
   error,
 }: ListingImageUploadProps) {
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const pickerInputRef = useRef<HTMLInputElement>(null);
 
   const addFiles = useCallback(
@@ -75,18 +74,6 @@ export function ListingImageUpload({
 
       <div className="flex flex-wrap gap-2 mb-3">
         <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files;
-            if (f?.length) addFiles(f);
-            clearInput(cameraInputRef);
-          }}
-        />
-        <input
           ref={pickerInputRef}
           type="file"
           accept={imageAccept}
@@ -100,24 +87,14 @@ export function ListingImageUpload({
         />
 
         {canAddMore && (
-          <>
-            <button
-              type="button"
-              onClick={() => cameraInputRef.current?.click()}
-              className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 active:bg-gray-100"
-            >
-              <span aria-hidden>📷</span>
-              צלם תמונה
-            </button>
-            <button
-              type="button"
-              onClick={() => pickerInputRef.current?.click()}
-              className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 active:bg-gray-100"
-            >
-              <span aria-hidden>🖼️</span>
-              בחר תמונות
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={() => pickerInputRef.current?.click()}
+            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 active:bg-gray-100"
+          >
+            <span aria-hidden>🖼️</span>
+            בחר תמונות
+          </button>
         )}
       </div>
 
