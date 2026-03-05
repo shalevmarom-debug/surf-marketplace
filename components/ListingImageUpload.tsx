@@ -34,8 +34,7 @@ export function ListingImageUpload({
   error,
 }: ListingImageUploadProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
-  const filesInputRef = useRef<HTMLInputElement>(null);
+  const pickerInputRef = useRef<HTMLInputElement>(null);
 
   const addFiles = useCallback(
     (newFiles: FileList | File[]) => {
@@ -88,19 +87,7 @@ export function ListingImageUpload({
           }}
         />
         <input
-          ref={galleryInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files;
-            if (f?.length) addFiles(f);
-            clearInput(galleryInputRef);
-          }}
-        />
-        <input
-          ref={filesInputRef}
+          ref={pickerInputRef}
           type="file"
           accept={imageAccept}
           multiple
@@ -108,7 +95,7 @@ export function ListingImageUpload({
           onChange={(e) => {
             const f = e.target.files;
             if (f?.length) addFiles(f);
-            clearInput(filesInputRef);
+            clearInput(pickerInputRef);
           }}
         />
 
@@ -124,19 +111,11 @@ export function ListingImageUpload({
             </button>
             <button
               type="button"
-              onClick={() => galleryInputRef.current?.click()}
+              onClick={() => pickerInputRef.current?.click()}
               className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 active:bg-gray-100"
             >
               <span aria-hidden>🖼️</span>
-              גלריה
-            </button>
-            <button
-              type="button"
-              onClick={() => filesInputRef.current?.click()}
-              className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 active:bg-gray-100"
-            >
-              <span aria-hidden>📁</span>
-              קבצים
+              בחר תמונות
             </button>
           </>
         )}
