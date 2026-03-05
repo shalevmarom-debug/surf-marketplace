@@ -1,10 +1,7 @@
-import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
-import { APP_NAME } from "@/lib/constants";
-import { BOARD_TYPES, REGIONS, CONDITIONS, FIN_SETUPS, CONSTRUCTIONS } from "@/lib/validations/listing";
 import { searchQueryToTokens } from "@/lib/normalize";
-import { FiltersPanel } from "@/components/FiltersPanel";
-import { ListingCard } from "@/components/ListingCard";
+import { HomeClient } from "@/components/HomeClient";
+import { Suspense } from "react";
 
 type Listing = {
   id: string;
@@ -23,6 +20,8 @@ type Listing = {
   sold_at?: string | null;
   created_at: string;
   listing_images?: { storage_path: string; sort_order: number; is_primary?: boolean }[] | null;
+  length_ft?: number | null;
+  volume_l?: number | null;
 };
 
 function displayCity(listing: Listing): string {
@@ -42,6 +41,7 @@ type HomeProps = {
     maxPrice?: string;
     q?: string;
     includeSold?: string;
+    sort?: string;
   }>;
 };
 
@@ -58,6 +58,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const maxPrice = params.maxPrice ?? "";
   const q = (params.q ?? "").trim();
   const includeSold = params.includeSold === "1" || params.includeSold === "true";
+  const sort = params.sort ?? "newest";
 
   const baseListingsQuery = supabase
     .from("listings")
@@ -81,10 +82,13 @@ export default async function Home({ searchParams }: HomeProps) {
   let query = supabase
     .from("listings")
     .select(
-      "id, title, price_ils, city, city_he, city_other, region, board_type, condition, fin_setup, construction, brand, brand_raw, sold_at, created_at, listing_images(storage_path, sort_order, is_primary)"
+      "id, title, price_ils, city, city_he, city_other, region, board_type, condition, fin_setup, construction, brand, brand_raw, sold_at, created_at, length_ft, volume_l, listing_images(storage_path, sort_order, is_primary)"
     )
-    .order("created_at", { ascending: false })
     .limit(48);
+
+  if (sort === "price_asc") query = query.order("price_ils", { ascending: true, nullsFirst: false });
+  else if (sort === "price_desc") query = query.order("price_ils", { ascending: false, nullsFirst: true });
+  else query = query.order("created_at", { ascending: false });
 
   if (!includeSold) query = query.is("sold_at", null);
   if (region) query = query.eq("region", region);
@@ -124,63 +128,40 @@ export default async function Home({ searchParams }: HomeProps) {
   });
   return (
     <main className="min-h-screen bg-[var(--background)]">
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        {/* Hero */}
-        <div className="mb-10 text-center">
-          <h1 className="mb-3 text-4xl font-bold tracking-tight text-[var(--foreground)] sm:text-5xl">
+      {/* Subtle gradient wave at top */}
+      <div className="pointer-events-none absolute left-0 right-0 top-0 h-48 bg-gradient-to-b from-[var(--surf-muted)]/30 to-transparent" aria-hidden />
+
+      <section className="relative mx-auto max-w-7xl px-4 py-4 md:py-8">
+        {/* Hero - desktop only, reduced height */}
+        <div className="mb-6 hidden text-center md:block">
+          <h1 className="mb-2 text-3xl font-bold tracking-tight text-[var(--foreground)] lg:text-4xl">
             Find your next surfboard in Israel
           </h1>
-          <p className="mx-auto max-w-2xl text-lg text-[var(--surf-muted-text)]">
+          <p className="mx-auto max-w-2xl text-base text-[var(--surf-muted-text)]">
             Browse boards from all over Israel. Filter by city, type, price and more.
           </p>
         </div>
 
-        <FiltersPanel
-          defaultRegion={region}
-          defaultCity={city}
-          defaultBoardType={boardType}
-          defaultCondition={condition}
-          defaultFinSetup={finSetup}
-          defaultConstruction={construction}
-          defaultBrand={brand}
-          defaultMinPrice={minPrice}
-          defaultMaxPrice={maxPrice}
-          defaultQ={q}
-          defaultIncludeSold={includeSold}
-          citiesWithCount={citiesWithCount}
-        />
-
-        {error && (
-          <p className="mb-4 text-sm text-red-600">
-            Failed to load listings: {error.message}
-          </p>
-        )}
-
-        {listingsWithImage.length === 0 && !error ? (
-          <p className="text-center text-[var(--surf-muted-text)]">
-            No listings match your filters.
-          </p>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {listingsWithImage.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                id={listing.id}
-                title={listing.title}
-                price_ils={listing.price_ils}
-                region={listing.region}
-                board_type={listing.board_type}
-                condition={listing.condition}
-                brand_raw={(listing as Listing).brand_raw}
-                brand={(listing as Listing).brand}
-                sold_at={(listing as Listing).sold_at}
-                created_at={listing.created_at}
-                primaryImageUrl={listing.primaryImageUrl}
-                displayCity={displayCity(listing)}
-              />
-            ))}
-          </div>
-        )}
+        <Suspense fallback={<p className="text-[var(--surf-muted-text)]">Loading…</p>}>
+          <HomeClient
+            listingsWithImage={listingsWithImage}
+            displayCity={displayCity}
+            error={!!error}
+            citiesWithCount={citiesWithCount}
+            defaultRegion={region}
+            defaultCity={city}
+            defaultBoardType={boardType}
+            defaultCondition={condition}
+            defaultFinSetup={finSetup}
+            defaultConstruction={construction}
+            defaultBrand={brand}
+            defaultMinPrice={minPrice}
+            defaultMaxPrice={maxPrice}
+            defaultQ={q}
+            defaultIncludeSold={includeSold}
+            defaultSort={sort}
+          />
+        </Suspense>
       </section>
     </main>
   );

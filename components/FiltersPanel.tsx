@@ -17,6 +17,7 @@ type FiltersPanelProps = {
   defaultMaxPrice: string;
   defaultQ: string;
   defaultIncludeSold: boolean;
+  defaultSort?: string;
   citiesWithCount?: { city: string; count: number }[];
 };
 
@@ -36,15 +37,17 @@ export function FiltersPanel(props: FiltersPanelProps) {
     defaultMaxPrice,
     defaultQ,
     defaultIncludeSold,
+    defaultSort = "newest",
     citiesWithCount = [],
   } = props;
   const [city, setCity] = useState(defaultCity);
   const [moreOpen, setMoreOpen] = useState(false);
 
   return (
-    <div className="mb-8 rounded-2xl border border-[var(--surf-border)] bg-[var(--surf-card)] p-4 shadow-sm">
-      <form action="/" method="GET" className="space-y-4">
+    <div className="mb-6 rounded-2xl border border-[var(--surf-border)] bg-[var(--surf-card)] p-3 shadow-sm md:mb-8 md:p-4">
+      <form action="/" method="GET" className="space-y-3 md:space-y-4">
         <input type="hidden" name="q" value={defaultQ} />
+        <input type="hidden" name="sort" value={defaultSort} />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
