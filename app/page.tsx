@@ -2,20 +2,31 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { APP_NAME } from "@/lib/constants";
 import { BOARD_TYPES, REGIONS, CONDITIONS, FIN_SETUPS, CONSTRUCTIONS } from "@/lib/validations/listing";
+import { searchQueryToTokens } from "@/lib/normalize";
+import { HomeFilterForm } from "@/components/HomeFilterForm";
 
 type Listing = {
   id: string;
   title: string;
   price_ils: number | null;
-  city: string;
+  city?: string | null;
+  city_he?: string | null;
+  city_other?: string | null;
   region: string;
   board_type: string;
   condition: string;
   fin_setup: string | null;
   construction: string | null;
+  brand?: string | null;
+  brand_raw?: string | null;
+  sold_at?: string | null;
   created_at: string;
   listing_images?: { storage_path: string; sort_order: number; is_primary?: boolean }[] | null;
 };
+
+function displayCity(listing: Listing): string {
+  return listing.city_he !== "אחר" ? (listing.city_he ?? listing.city ?? "") : (listing.city_other?.trim() || "אחר");
+}
 type ListingWithImage = Listing & { primaryImageUrl: string | null };
 type HomeProps = {
   searchParams?: Promise<{
@@ -28,6 +39,8 @@ type HomeProps = {
     brand?: string;
     minPrice?: string;
     maxPrice?: string;
+    q?: string;
+    includeSold?: string;
   }>;
 };
 
@@ -42,24 +55,56 @@ export default async function Home({ searchParams }: HomeProps) {
   const brand = params.brand ?? "";
   const minPrice = params.minPrice ?? "";
   const maxPrice = params.maxPrice ?? "";
+  const q = (params.q ?? "").trim();
+  const includeSold = params.includeSold === "1" || params.includeSold === "true";
+
+  const baseListingsQuery = supabase
+    .from("listings")
+    .select("city_he, city_other")
+    .limit(10000);
+  const visibilityQuery = includeSold ? baseListingsQuery : baseListingsQuery.is("sold_at", null);
+  const { data: cityRows } = await visibilityQuery;
+  const displayCityCounts = new Map<string, number>();
+  for (const row of cityRows ?? []) {
+    const ch = (row as { city_he?: string | null; city_other?: string | null }).city_he;
+    const co = (row as { city_he?: string | null; city_other?: string | null }).city_other;
+    const displayCity = ch !== "אחר" ? (ch ?? "") : (co?.trim() || "אחר");
+    if (!displayCity) continue;
+    displayCityCounts.set(displayCity, (displayCityCounts.get(displayCity) ?? 0) + 1);
+  }
+  const citiesWithCount: { city: string; count: number }[] = Array.from(displayCityCounts.entries())
+    .filter(([, count]) => count > 0)
+    .map(([cityName, count]) => ({ city: cityName, count }))
+    .sort((a, b) => b.count - a.count);
 
   let query = supabase
     .from("listings")
     .select(
-      "id, title, price_ils, city, region, board_type, condition, fin_setup, construction, created_at, listing_images(storage_path, sort_order, is_primary)"
+      "id, title, price_ils, city, city_he, city_other, region, board_type, condition, fin_setup, construction, brand, brand_raw, sold_at, created_at, listing_images(storage_path, sort_order, is_primary)"
     )
     .order("created_at", { ascending: false })
     .limit(48);
 
+  if (!includeSold) query = query.is("sold_at", null);
   if (region) query = query.eq("region", region);
   if (boardType) query = query.eq("board_type", boardType);
   if (condition) query = query.eq("condition", condition);
   if (finSetup) query = query.eq("fin_setup", finSetup);
   if (construction) query = query.eq("construction", construction);
-  if (city) query = query.ilike("city", `%${city}%`);
-  if (brand) query = query.ilike("brand", `%${brand}%`);
+  if (city) {
+    const esc = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    query = query.or(`city_he.eq.${esc(city)},and(city_he.eq.${esc("אחר")},city_other.eq.${esc(city)})`);
+  }
+  if (brand) query = query.or(`brand.ilike.%${brand}%,brand_raw.ilike.%${brand}%`);
   if (minPrice) query = query.gte("price_ils", Number(minPrice));
   if (maxPrice) query = query.lte("price_ils", Number(maxPrice));
+  if (q) {
+    const tokens = searchQueryToTokens(q);
+    const parts: string[] = [];
+    if (tokens.normal) parts.push(`search_compact.ilike.%${tokens.normal.replace(/%/g, "\\%")}%`);
+    if (tokens.compact && tokens.compact !== tokens.normal) parts.push(`search_compact.ilike.%${tokens.compact.replace(/%/g, "\\%")}%`);
+    if (parts.length) query = query.or(parts.join(","));
+  }
 
   const { data, error } = await query;
   const listings: Listing[] = data ?? [];
@@ -82,74 +127,24 @@ export default async function Home({ searchParams }: HomeProps) {
         <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold mb-2">{APP_NAME}</h1>
           <p className="text-gray-600">
-            Browse surfboard listings from all over Israel.
+          Browse surfboard listings from all over Israel.
           </p>
         </div>
 
-        {/* Filters */}
-        <form
-          className="mb-6 grid gap-3 rounded-lg bg-white p-4 shadow-sm md:grid-cols-2 lg:grid-cols-5"
-          action="/"
-          method="GET"
-        >
-          <div>
-            <label className="block text-xs font-medium mb-1" htmlFor="region">Region</label>
-            <select id="region" name="region" defaultValue={region} className="w-full rounded border px-2 py-1 text-sm">
-              <option value="">All</option>
-              {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" htmlFor="city">City</label>
-            <input id="city" name="city" type="text" defaultValue={city} className="w-full rounded border px-2 py-1 text-sm" placeholder="Any city" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" htmlFor="boardType">Board type</label>
-            <select id="boardType" name="boardType" defaultValue={boardType} className="w-full rounded border px-2 py-1 text-sm">
-              <option value="">All</option>
-              {BOARD_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" htmlFor="condition">Condition</label>
-            <select id="condition" name="condition" defaultValue={condition} className="w-full rounded border px-2 py-1 text-sm">
-              <option value="">All</option>
-              {CONDITIONS.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" htmlFor="finSetup">Fin setup</label>
-            <select id="finSetup" name="finSetup" defaultValue={finSetup} className="w-full rounded border px-2 py-1 text-sm">
-              <option value="">All</option>
-              {FIN_SETUPS.map((f) => <option key={f} value={f}>{f}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" htmlFor="construction">Construction</label>
-            <select id="construction" name="construction" defaultValue={construction} className="w-full rounded border px-2 py-1 text-sm">
-              <option value="">All</option>
-              {CONSTRUCTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" htmlFor="brand">Brand</label>
-            <input id="brand" name="brand" type="text" defaultValue={brand} className="w-full rounded border px-2 py-1 text-sm" placeholder="Any brand" />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-xs font-medium mb-1" htmlFor="minPrice">Min price</label>
-              <input id="minPrice" name="minPrice" type="number" min={0} defaultValue={minPrice} className="w-full rounded border px-2 py-1 text-xs" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" htmlFor="maxPrice">Max price</label>
-              <input id="maxPrice" name="maxPrice" type="number" min={0} defaultValue={maxPrice} className="w-full rounded border px-2 py-1 text-xs" />
-            </div>
-          </div>
-          <div className="lg:col-span-5 flex items-end justify-end gap-2">
-            <Link href="/" className="rounded border px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100">Clear</Link>
-            <button type="submit" className="rounded bg-blue-600 px-4 py-1 text-xs font-semibold text-white hover:bg-blue-700">Apply filters</button>
-          </div>
-        </form>
+        <HomeFilterForm
+          defaultRegion={region}
+          defaultCity={city}
+          defaultBoardType={boardType}
+          defaultCondition={condition}
+          defaultFinSetup={finSetup}
+          defaultConstruction={construction}
+          defaultBrand={brand}
+          defaultMinPrice={minPrice}
+          defaultMaxPrice={maxPrice}
+          defaultQ={q}
+          defaultIncludeSold={includeSold}
+          citiesWithCount={citiesWithCount}
+        />
 
         {error && (
           <p className="mb-4 text-sm text-red-600">
@@ -182,10 +177,11 @@ export default async function Home({ searchParams }: HomeProps) {
                   {listing.title}
                 </h2>
                 <p className="text-sm text-gray-600 mb-1">
-                  {listing.city}, {listing.region}
+                  {displayCity(listing)}, {listing.region}
                 </p>
                 <p className="text-sm text-gray-600 mb-1">
                   {listing.board_type} · {listing.condition}
+                  {((listing as Listing).brand_raw ?? (listing as Listing).brand) && ` · ${(listing as Listing).brand_raw ?? (listing as Listing).brand}`}
                 </p>
                 {listing.price_ils !== null && (
                   <p className="text-base font-bold text-gray-900 mb-2">
@@ -194,7 +190,7 @@ export default async function Home({ searchParams }: HomeProps) {
                 )}
               </Link>
               <p className="text-xs text-gray-400">
-                Posted at {new Date(listing.created_at).toLocaleString()}
+                Posted {new Date(listing.created_at).toLocaleString()}
               </p>
             </article>
           ))}

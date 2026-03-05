@@ -47,7 +47,7 @@ export const CITY_MAX = 100;
 export const PRICE_MIN = 0;
 export const PRICE_MAX = 15000;
 export const VOLUME_L_MIN = 0;
-export const VOLUME_L_MAX = 250;
+export const VOLUME_L_MAX = 200;
 export const IMAGE_FILE_SIZE_MAX = 5 * 1024 * 1024; // 5MB
 export const IMAGE_FILES_MIN_COUNT = 3;
 export const IMAGE_FILES_MAX_COUNT = 10;
@@ -78,12 +78,15 @@ export const listingSchema = z
       .number()
       .min(PRICE_MIN, `Price must be ${PRICE_MIN}–${PRICE_MAX} ILS`)
       .max(PRICE_MAX, `Price must be ${PRICE_MIN}–${PRICE_MAX} ILS`),
-    city: z.string().min(1, "City is required").max(CITY_MAX),
-    region: z.enum(REGIONS),
+    city: z.string().min(1, "City is required").max(CITY_MAX).optional(),
+    city_he: z.string().min(1, "Please select a city").max(CITY_MAX).optional(),
+    city_other: z.string().max(CITY_MAX).optional(),
+    region: z.enum(REGIONS).optional(),
     board_type: z.enum(BOARD_TYPES),
     length_ft: z.number().optional().nullable(),
     volume_l: z.number().min(VOLUME_L_MIN).max(VOLUME_L_MAX).optional().nullable(),
     brand: z.string().max(BRAND_MAX).optional(),
+    brand_other: z.string().max(BRAND_MAX).optional(),
     condition: z.enum(CONDITIONS),
     repairs: z.boolean(),
     fins_included: z.boolean(),
@@ -98,6 +101,10 @@ export const listingSchema = z
       return data.length_ft >= minF && data.length_ft <= maxF;
     },
     { message: "Length is out of range for this board type", path: ["length_ft"] }
-  );
+  )
+  .refine((data) => (data.city_he?.trim()?.length ?? 0) > 0 || (data.city?.trim()?.length ?? 0) > 0, {
+    message: "Please select a city",
+    path: ["city_he"],
+  });
 
 export type ListingFormData = z.infer<typeof listingSchema>;

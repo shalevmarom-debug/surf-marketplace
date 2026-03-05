@@ -2,6 +2,9 @@
 
 import { listingSchema, BOARD_TYPES, REGIONS, CONDITIONS, FIN_SETUPS, CONSTRUCTIONS, LENGTH_FT_RANGES, TITLE_MIN, TITLE_MAX, PRICE_MAX, VOLUME_L_MAX } from "@/lib/validations/listing";
 import { toE164, COUNTRY_OPTIONS, DEFAULT_COUNTRY_CODE } from "@/lib/phone";
+import { normalizeText, compactText, buildSearchCompact } from "@/lib/normalize";
+import { CitySelectHe } from "@/components/CitySelectHe";
+import { SearchableSelect } from "@/components/SearchableSelect";
 import { FormEvent, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -16,12 +19,14 @@ export default function EditListingPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priceIls, setPriceIls] = useState<number | "">("");
-  const [city, setCity] = useState("");
+  const [cityHe, setCityHe] = useState("");
+  const [cityOther, setCityOther] = useState("");
   const [region, setRegion] = useState<(typeof REGIONS)[number]>("Center");
   const [boardType, setBoardType] = useState<(typeof BOARD_TYPES)[number]>("Shortboard");
   const [lengthFt, setLengthFt] = useState<number | "">("");
   const [volumeL, setVolumeL] = useState<number | "">("");
   const [brand, setBrand] = useState("");
+  const [brandSuggestions, setBrandSuggestions] = useState<string[]>([]);
   const [condition, setCondition] = useState<(typeof CONDITIONS)[number]>("Used (Normal)");
   const [repairs, setRepairs] = useState(false);
   const [finsIncluded, setFinsIncluded] = useState(false);
@@ -57,12 +62,13 @@ export default function EditListingPage() {
       setTitle(data.title ?? "");
       setDescription(data.description ?? "");
       setPriceIls(data.price_ils ?? "");
-      setCity(data.city ?? "");
+      setCityHe((data.city_he ?? data.city) ?? "");
+      setCityOther(data.city_he === "אחר" ? (data.city_other ?? "") : "");
       setRegion((data.region as (typeof REGIONS)[number]) ?? "Center");
       setBoardType((data.board_type === "Softtop" ? "Softboard" : data.board_type) as (typeof BOARD_TYPES)[number]);
       setLengthFt(data.length_ft ?? "");
       setVolumeL(data.volume_l ?? "");
-      setBrand(data.brand ?? "");
+      setBrand((data.brand_raw ?? data.brand) ?? "");
       setCondition(
         (CONDITIONS as readonly string[]).includes(data.condition)
           ? (data.condition as (typeof CONDITIONS)[number])
@@ -82,6 +88,24 @@ export default function EditListingPage() {
     if (params.id) load();
   }, [params.id, router]);
 
+  useEffect(() => {
+    if (!brand.trim()) {
+      setBrandSuggestions([]);
+      return;
+    }
+    const q = brand.trim().toLowerCase();
+    const fetchBrands = async () => {
+      const { data } = await supabase.from("listings").select("brand_raw, brand").limit(300);
+      const raw = (data ?? [])
+        .map((r: { brand_raw?: string | null; brand?: string | null }) => r.brand_raw ?? r.brand)
+        .filter(Boolean) as string[];
+      const unique = [...new Set(raw)];
+      const filtered = unique.filter((b) => b.toLowerCase().includes(q)).slice(0, 15);
+      setBrandSuggestions(filtered);
+    };
+    fetchBrands();
+  }, [brand]);
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setLoading(true);
@@ -89,7 +113,7 @@ export default function EditListingPage() {
 
     const e164 = toE164(whatsappPhone, countryCode);
     if (!e164) {
-      setStatus("Invalid phone. Use 9 digits for Israel (e.g. 0501234567) or E.164 (8–15 digits).");
+      setStatus("Invalid phone. Use 9 digits for Israel (e.g. 0501234567) or E.164 format.");
       setLoading(false);
       return;
     }
@@ -98,12 +122,13 @@ export default function EditListingPage() {
       title,
       description: description || undefined,
       price_ils: priceIls === "" ? 0 : Number(priceIls),
-      city,
+      city_he: cityHe.trim(),
+      city_other: cityHe.trim() === "אחר" ? cityOther.trim() || undefined : undefined,
       region,
       board_type: boardType,
       length_ft: lengthFt === "" ? null : Number(lengthFt),
       volume_l: volumeL === "" ? null : Number(volumeL),
-      brand: brand || undefined,
+      brand: brand.trim() || undefined,
       condition,
       repairs,
       fins_included: finsIncluded,
@@ -111,6 +136,17 @@ export default function EditListingPage() {
       construction: construction || null,
       whatsapp_phone: e164,
     };
+
+    if (!cityHe.trim()) {
+      setStatus("Please select a city.");
+      setLoading(false);
+      return;
+    }
+    if (cityHe.trim() === "אחר" && !cityOther.trim()) {
+      setStatus("נא לפרט את היישוב");
+      setLoading(false);
+      return;
+    }
 
     const parsed = listingSchema.safeParse(raw);
     if (!parsed.success) {
@@ -128,18 +164,41 @@ export default function EditListingPage() {
       return;
     }
 
+    const displayCity = cityHe.trim() === "אחר" ? (cityOther.trim() || "אחר") : cityHe.trim();
+    const cityNorm = normalizeText(displayCity);
+    const cityCompact = compactText(displayCity);
+    const brandRaw = brand.trim() || null;
+    const brandNorm = brandRaw ? normalizeText(brandRaw) : "";
+    const brandCompact = brandRaw ? compactText(brandRaw) : "";
+    const titleNorm = normalizeText(title);
+    const titleCompact = compactText(title);
+    const searchCompact = buildSearchCompact(title, brandRaw, displayCity);
+
     const { error } = await supabase
       .from("listings")
       .update({
         title,
         description: description || null,
         price_ils: priceIls === "" ? null : Number(priceIls),
-        city,
+        city: displayCity,
+        city_he: cityHe.trim(),
+        city_other: cityHe.trim() === "אחר" ? cityOther.trim() || null : null,
+        city_norm: cityNorm || null,
+        city_compact: cityCompact || null,
         region,
         board_type: boardType,
         length_ft: lengthFt === "" ? null : Number(lengthFt),
         volume_l: volumeL === "" ? null : Number(volumeL),
-        brand: brand || null,
+        brand_raw: brandRaw,
+        brand_norm: brandNorm || null,
+        brand_compact: brandCompact || null,
+        brand: brandRaw,
+        title_norm: titleNorm || null,
+        title_compact: titleCompact || null,
+        title_normalized: titleNorm || null,
+        brand_normalized: brandNorm || null,
+        city_normalized: cityNorm || null,
+        search_compact: searchCompact || null,
         condition,
         repairs,
         fins_included: finsIncluded,
@@ -204,7 +263,15 @@ export default function EditListingPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="city">City</label>
-              <input id="city" type="text" required className="w-full rounded border px-3 py-2 text-sm" value={city} onChange={(e) => setCity(e.target.value)} />
+              <CitySelectHe
+                id="city"
+                value={cityHe}
+                onChange={setCityHe}
+                placeholder="Search city..."
+                otherText={cityOther}
+                onOtherTextChange={setCityOther}
+                otherPlaceholder="פרט יישוב"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="region">Region</label>
@@ -214,13 +281,41 @@ export default function EditListingPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="boardType">Board type</label>
-              <select id="boardType" className="w-full rounded border px-3 py-2 text-sm" value={boardType} onChange={(e) => setBoardType(e.target.value as (typeof BOARD_TYPES)[number])}>
-                {BOARD_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
+              <SearchableSelect
+                id="boardType"
+                options={[...BOARD_TYPES]}
+                value={boardType}
+                onChange={(v) => setBoardType(v as (typeof BOARD_TYPES)[number])}
+                placeholder="Select type..."
+              />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="brand">Brand</label>
-              <input id="brand" type="text" className="w-full rounded border px-3 py-2 text-sm" value={brand} onChange={(e) => setBrand(e.target.value)} />
+              <div className="relative">
+                <input
+                  id="brand"
+                  type="text"
+                  maxLength={100}
+                  placeholder="Search or type brand"
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
+                />
+                {brandSuggestions.length > 0 && (
+                  <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-auto rounded border border-gray-200 bg-white py-1 shadow" role="listbox">
+                    {brandSuggestions.map((b) => (
+                      <li
+                        key={b}
+                        role="option"
+                        className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100"
+                        onMouseDown={(e) => { e.preventDefault(); setBrand(b); setBrandSuggestions([]); }}
+                      >
+                        {b}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="lengthFt">Length (ft)</label>

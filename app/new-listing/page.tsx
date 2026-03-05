@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { toE164, COUNTRY_OPTIONS, DEFAULT_COUNTRY_CODE } from "@/lib/phone";
@@ -21,6 +21,10 @@ import {
   IMAGE_FILES_MAX_COUNT,
   IMAGE_ALLOWED_TYPES,
 } from "@/lib/validations/listing";
+import { CitySelectHe } from "@/components/CitySelectHe";
+import { SearchableSelect } from "@/components/SearchableSelect";
+import { normalizeText, compactText, buildSearchCompact } from "@/lib/normalize";
+import { ListingImageUpload } from "@/components/ListingImageUpload";
 
 export default function NewListingPage() {
   const router = useRouter();
@@ -30,12 +34,14 @@ export default function NewListingPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priceIls, setPriceIls] = useState<number | "">("");
-  const [city, setCity] = useState("");
+  const [cityHe, setCityHe] = useState("");
+  const [cityOther, setCityOther] = useState("");
   const [region, setRegion] = useState<typeof REGIONS[number]>("Center");
   const [boardType, setBoardType] = useState<typeof BOARD_TYPES[number]>("Shortboard");
   const [lengthFt, setLengthFt] = useState<number | "">("");
   const [volumeL, setVolumeL] = useState<number | "">("");
   const [brand, setBrand] = useState("");
+  const [brandSuggestions, setBrandSuggestions] = useState<string[]>([]);
   const [condition, setCondition] = useState<typeof CONDITIONS[number]>("Used (Normal)");
   const [repairs, setRepairs] = useState(false);
   const [finsIncluded, setFinsIncluded] = useState(false);
@@ -43,8 +49,26 @@ export default function NewListingPage() {
   const [construction, setConstruction] = useState<string>("");
   const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY_CODE);
   const [whatsappPhone, setWhatsappPhone] = useState("");
-  const [imageFiles, setImageFiles] = useState<FileList | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [primaryImageIndex, setPrimaryImageIndex] = useState(0);
+
+  useEffect(() => {
+    if (!brand.trim()) {
+      setBrandSuggestions([]);
+      return;
+    }
+    const q = brand.trim().toLowerCase();
+    const fetchBrands = async () => {
+      const { data } = await supabase.from("listings").select("brand_raw, brand").limit(300);
+      const raw = (data ?? [])
+        .map((r: { brand_raw?: string | null; brand?: string | null }) => r.brand_raw ?? r.brand)
+        .filter(Boolean) as string[];
+      const unique = [...new Set(raw)];
+      const filtered = unique.filter((b) => b.toLowerCase().includes(q)).slice(0, 15);
+      setBrandSuggestions(filtered);
+    };
+    fetchBrands();
+  }, [brand]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -53,7 +77,17 @@ export default function NewListingPage() {
 
     const e164 = toE164(whatsappPhone, countryCode);
     if (!e164) {
-      setStatus("Invalid phone. Use 9 digits for Israel (e.g. 0501234567) or E.164 (8–15 digits).");
+      setStatus("Invalid phone. Use 9 digits for Israel (e.g. 0501234567) or E.164 format.");
+      setLoading(false);
+      return;
+    }
+    if (!cityHe.trim()) {
+      setStatus("Please select a city.");
+      setLoading(false);
+      return;
+    }
+    if (cityHe.trim() === "אחר" && !cityOther.trim()) {
+      setStatus("נא לפרט את היישוב");
       setLoading(false);
       return;
     }
@@ -62,12 +96,13 @@ export default function NewListingPage() {
       title,
       description: description || undefined,
       price_ils: priceIls === "" ? 0 : Number(priceIls),
-      city,
+      city_he: cityHe.trim(),
+      city_other: cityHe.trim() === "אחר" ? cityOther.trim() || undefined : undefined,
       region,
       board_type: boardType,
       length_ft: lengthFt === "" ? null : Number(lengthFt),
       volume_l: volumeL === "" ? null : Number(volumeL),
-      brand: brand || undefined,
+      brand: brand.trim() || undefined,
       condition,
       repairs,
       fins_included: finsIncluded,
@@ -85,7 +120,17 @@ export default function NewListingPage() {
       return;
     }
 
-    if (!imageFiles || imageFiles.length < IMAGE_FILES_MIN_COUNT) {
+    const displayCity = cityHe.trim() === "אחר" ? (cityOther.trim() || "אחר") : cityHe.trim();
+    const cityNorm = normalizeText(displayCity);
+    const cityCompact = compactText(displayCity);
+    const brandRaw = brand.trim() || null;
+    const brandNorm = brandRaw ? normalizeText(brandRaw) : "";
+    const brandCompact = brandRaw ? compactText(brandRaw) : "";
+    const titleNorm = normalizeText(title);
+    const titleCompact = compactText(title);
+    const searchCompact = buildSearchCompact(title, brandRaw, displayCity);
+
+    if (!imageFiles.length || imageFiles.length < IMAGE_FILES_MIN_COUNT) {
       setStatus(`Add at least ${IMAGE_FILES_MIN_COUNT} images (${IMAGE_FILES_MIN_COUNT}–${IMAGE_FILES_MAX_COUNT}).`);
       setLoading(false);
       return;
@@ -95,7 +140,7 @@ export default function NewListingPage() {
       setLoading(false);
       return;
     }
-    const filesArray = Array.from(imageFiles);
+    const filesArray = imageFiles;
     for (let i = 0; i < filesArray.length; i++) {
       const file = filesArray[i];
       if (!IMAGE_ALLOWED_TYPES.includes(file.type as (typeof IMAGE_ALLOWED_TYPES)[number])) {
@@ -140,12 +185,25 @@ export default function NewListingPage() {
         title,
         description: description || null,
         price_ils: priceIls === "" ? null : Number(priceIls),
-        city,
-        region,
+        city: displayCity,
+        city_he: cityHe.trim(),
+        city_other: cityHe.trim() === "אחר" ? cityOther.trim() || null : null,
+        city_norm: cityNorm || null,
+        city_compact: cityCompact || null,
+        region: region,
         board_type: boardType,
         length_ft: lengthFt === "" ? null : Number(lengthFt),
         volume_l: volumeL === "" ? null : Number(volumeL),
-        brand: brand || null,
+        brand_raw: brandRaw,
+        brand_norm: brandNorm || null,
+        brand_compact: brandCompact || null,
+        brand: brandRaw,
+        title_norm: titleNorm || null,
+        title_compact: titleCompact || null,
+        title_normalized: titleNorm || null,
+        brand_normalized: brandNorm || null,
+        city_normalized: cityNorm || null,
+        search_compact: searchCompact || null,
         condition,
         repairs,
         fins_included: finsIncluded,
@@ -194,7 +252,6 @@ export default function NewListingPage() {
   }
 
   const lengthRange = LENGTH_FT_RANGES[boardType];
-  const numImages = imageFiles?.length ?? 0;
 
   return (
     <main className="flex min-h-screen justify-center bg-gray-100">
@@ -231,14 +288,14 @@ export default function NewListingPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="city">City</label>
-              <input
+              <CitySelectHe
                 id="city"
-                type="text"
-                required
-                maxLength={100}
-                className="w-full rounded border px-3 py-2 text-sm"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
+                value={cityHe}
+                onChange={setCityHe}
+                placeholder="Search city..."
+                otherText={cityOther}
+                onOtherTextChange={setCityOther}
+                otherPlaceholder="פרט יישוב"
               />
             </div>
             <div>
@@ -256,27 +313,41 @@ export default function NewListingPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="boardType">Board type</label>
-              <select
+              <SearchableSelect
                 id="boardType"
-                className="w-full rounded border px-3 py-2 text-sm"
+                options={[...BOARD_TYPES]}
                 value={boardType}
-                onChange={(e) => setBoardType(e.target.value as (typeof BOARD_TYPES)[number])}
-              >
-                {BOARD_TYPES.map((b) => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
+                onChange={(v) => setBoardType(v as (typeof BOARD_TYPES)[number])}
+                placeholder="Select type..."
+              />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="brand">Brand</label>
-              <input
-                id="brand"
-                type="text"
-                maxLength={100}
-                className="w-full rounded border px-3 py-2 text-sm"
-                value={brand}
-                onChange={(e) => setBrand(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  id="brand"
+                  type="text"
+                  maxLength={100}
+                  placeholder="Search or type brand"
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
+                />
+                {brandSuggestions.length > 0 && (
+                  <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-auto rounded border border-gray-200 bg-white py-1 shadow" role="listbox">
+                    {brandSuggestions.map((b) => (
+                      <li
+                        key={b}
+                        role="option"
+                        className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100"
+                        onMouseDown={(e) => { e.preventDefault(); setBrand(b); setBrandSuggestions([]); }}
+                      >
+                        {b}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="lengthFt">Length (ft)</label>
@@ -384,34 +455,12 @@ export default function NewListingPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" htmlFor="images">
-              Images ({IMAGE_FILES_MIN_COUNT}–{IMAGE_FILES_MAX_COUNT}, JPG/PNG/WebP, max 5MB each)
-            </label>
-            <input
-              id="images"
-              type="file"
-              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-              multiple
-              className="w-full text-sm"
-              onChange={(e) => {
-                setImageFiles(e.target.files);
-                setPrimaryImageIndex(0);
-              }}
+            <ListingImageUpload
+              files={imageFiles}
+              onFilesChange={setImageFiles}
+              primaryIndex={primaryImageIndex}
+              onPrimaryChange={setPrimaryImageIndex}
             />
-            {numImages > 0 && (
-              <div className="mt-2">
-                <label className="block text-xs font-medium mb-1">Primary image</label>
-                <select
-                  className="rounded border px-2 py-1 text-sm"
-                  value={primaryImageIndex}
-                  onChange={(e) => setPrimaryImageIndex(Number(e.target.value))}
-                >
-                  {Array.from({ length: numImages }, (_, i) => (
-                    <option key={i} value={i}>Image {i + 1}</option>
-                  ))}
-                </select>
-              </div>
-            )}
           </div>
 
           <div>
