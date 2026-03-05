@@ -254,9 +254,9 @@ export default function NewListingPage() {
   const lengthRange = LENGTH_FT_RANGES[boardType];
 
   return (
-    <main className="flex min-h-screen justify-center bg-gray-100">
-      <div className="w-full max-w-2xl bg-white p-6 mt-6 mb-6 rounded-lg shadow">
-        <h1 className="mb-4 text-2xl font-bold">New Listing</h1>
+    <main className="min-h-screen bg-[var(--background)] py-8">
+      <div className="mx-auto max-w-2xl rounded-2xl border border-[var(--surf-border)] bg-[var(--surf-card)] p-6 shadow-sm">
+        <h1 className="mb-6 text-2xl font-bold text-[var(--foreground)]">New Listing</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
@@ -478,7 +478,7 @@ export default function NewListingPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+            className="rounded-xl bg-[var(--surf-primary)] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[var(--surf-primary-hover)] disabled:opacity-60"
           >
             {loading ? "Creating listing..." : "Create listing"}
           </button>

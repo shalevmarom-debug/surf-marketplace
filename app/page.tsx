@@ -3,7 +3,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { APP_NAME } from "@/lib/constants";
 import { BOARD_TYPES, REGIONS, CONDITIONS, FIN_SETUPS, CONSTRUCTIONS } from "@/lib/validations/listing";
 import { searchQueryToTokens } from "@/lib/normalize";
-import { HomeFilterForm } from "@/components/HomeFilterForm";
+import { FiltersPanel } from "@/components/FiltersPanel";
+import { ListingCard } from "@/components/ListingCard";
 
 type Listing = {
   id: string;
@@ -122,16 +123,19 @@ export default async function Home({ searchParams }: HomeProps) {
     return { ...listing, primaryImageUrl };
   });
   return (
-    <main className="min-h-screen bg-gray-100">
-      <section className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold mb-2">{APP_NAME}</h1>
-          <p className="text-gray-600">
-          Browse surfboard listings from all over Israel.
+    <main className="min-h-screen bg-[var(--background)]">
+      <section className="mx-auto max-w-7xl px-4 py-8">
+        {/* Hero */}
+        <div className="mb-10 text-center">
+          <h1 className="mb-3 text-4xl font-bold tracking-tight text-[var(--foreground)] sm:text-5xl">
+            Find your next surfboard in Israel
+          </h1>
+          <p className="mx-auto max-w-2xl text-lg text-[var(--surf-muted-text)]">
+            Browse boards from all over Israel. Filter by city, type, price and more.
           </p>
         </div>
 
-        <HomeFilterForm
+        <FiltersPanel
           defaultRegion={region}
           defaultCity={city}
           defaultBoardType={boardType}
@@ -153,50 +157,31 @@ export default async function Home({ searchParams }: HomeProps) {
         )}
 
         {listingsWithImage.length === 0 && !error ? (
-          <p className="text-center text-gray-600">
+          <p className="text-center text-[var(--surf-muted-text)]">
             No listings match your filters.
           </p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {listingsWithImage.map((listing) => (
-            <article
-              key={listing.id}
-              className="rounded-lg border bg-white p-4 shadow-sm"
-            >
-              {listing.primaryImageUrl && (
-                <div className="mb-2 overflow-hidden rounded">
-                  <img
-                    src={listing.primaryImageUrl}
-                    alt={listing.title}
-                    className="h-40 w-full object-cover"
-                  />
-                </div>
-              )}
-              <Link href={`/listing/${listing.id}`} className="block">
-                <h2 className="mb-1 text-lg font-semibold">
-                  {listing.title}
-                </h2>
-                <p className="text-sm text-gray-600 mb-1">
-                  {displayCity(listing)}, {listing.region}
-                </p>
-                <p className="text-sm text-gray-600 mb-1">
-                  {listing.board_type} · {listing.condition}
-                  {((listing as Listing).brand_raw ?? (listing as Listing).brand) && ` · ${(listing as Listing).brand_raw ?? (listing as Listing).brand}`}
-                </p>
-                {listing.price_ils !== null && (
-                  <p className="text-base font-bold text-gray-900 mb-2">
-                    {listing.price_ils} ILS
-                  </p>
-                )}
-              </Link>
-              <p className="text-xs text-gray-400">
-                Posted {new Date(listing.created_at).toLocaleString()}
-              </p>
-            </article>
-          ))}
-        </div>
-      )}
-    </section>
-  </main>
-);
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {listingsWithImage.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                id={listing.id}
+                title={listing.title}
+                price_ils={listing.price_ils}
+                region={listing.region}
+                board_type={listing.board_type}
+                condition={listing.condition}
+                brand_raw={(listing as Listing).brand_raw}
+                brand={(listing as Listing).brand}
+                sold_at={(listing as Listing).sold_at}
+                created_at={listing.created_at}
+                primaryImageUrl={listing.primaryImageUrl}
+                displayCity={displayCity(listing)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
+  );
 }

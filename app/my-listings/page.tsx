@@ -70,21 +70,21 @@ export default function MyListingsPage() {
 
   if (checkingAuth) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">Checking permissions...</p>
+      <main className="flex min-h-screen items-center justify-center bg-[var(--background)]">
+        <p className="text-[var(--surf-muted-text)]">Checking permissions...</p>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen justify-center bg-gray-100">
-      <div className="w-full max-w-3xl bg-white p-6 mt-6 mb-6 rounded-lg shadow">
-        <h1 className="mb-4 text-2xl font-bold">My Listings</h1>
+    <main className="min-h-screen bg-[var(--background)] py-8">
+      <div className="mx-auto max-w-3xl rounded-2xl border border-[var(--surf-border)] bg-[var(--surf-card)] p-6 shadow-sm">
+        <h1 className="mb-6 text-2xl font-bold text-[var(--foreground)]">My Listings</h1>
 
         {loading ? (
-          <p className="text-gray-500">Loading your listings...</p>
+          <p className="text-[var(--surf-muted-text)]">Loading your listings...</p>
         ) : listings.length === 0 ? (
-          <p className="text-gray-600">
+          <p className="text-[var(--surf-muted-text)]">
             You do not have any listings yet.
           </p>
         ) : (

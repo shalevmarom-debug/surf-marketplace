@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import AuthStatus from "@/components/AuthStatus";
+import Header from "@/components/Header";
 import { APP_NAME } from "@/lib/constants";
 
 const geistSans = Geist({
@@ -27,9 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-100`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--background)]`}
       >
-        <AuthStatus />
+        <Suspense fallback={<header className="sticky top-0 z-50 border-b border-[var(--surf-border)] bg-[var(--surf-card)] shadow-sm h-14" />}>
+          <Header />
+        </Suspense>
         {children}
       </body>
     </html>

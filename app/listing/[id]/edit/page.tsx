@@ -223,16 +223,16 @@ export default function EditListingPage() {
 
   if (checkingAuth) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">Checking permissions...</p>
+      <main className="flex min-h-screen items-center justify-center bg-[var(--background)]">
+        <p className="text-[var(--surf-muted-text)]">Checking permissions...</p>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen justify-center bg-gray-100">
-      <div className="w-full max-w-2xl bg-white p-6 mt-6 mb-6 rounded-lg shadow">
-        <h1 className="mb-4 text-2xl font-bold">Edit Listing</h1>
+    <main className="min-h-screen bg-[var(--background)] py-8">
+      <div className="mx-auto max-w-2xl rounded-2xl border border-[var(--surf-border)] bg-[var(--surf-card)] p-6 shadow-sm">
+        <h1 className="mb-6 text-2xl font-bold text-[var(--foreground)]">Edit Listing</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
@@ -395,7 +395,7 @@ export default function EditListingPage() {
             <label className="block text-sm font-medium mb-1" htmlFor="description">Description</label>
             <textarea id="description" maxLength={2000} className="w-full rounded border px-3 py-2 text-sm" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
-          <button type="submit" disabled={loading} className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+          <button type="submit" disabled={loading} className="rounded-xl bg-[var(--surf-primary)] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[var(--surf-primary-hover)] disabled:opacity-60">
             {loading ? "Saving..." : "Save changes"}
           </button>
         </form>
