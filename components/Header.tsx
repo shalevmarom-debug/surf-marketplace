@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { APP_NAME } from "@/lib/constants";
+import { Waves } from "lucide-react";
 
 type UserInfo = { email: string | null } | null;
 
@@ -49,13 +50,18 @@ export default function Header() {
 
   return (
     <header ref={headerRef} className="sticky top-0 z-50 border-b border-[var(--surf-border)] bg-[var(--surf-card)] shadow-sm">
-      {/* Row 1: logo + Post a board (mobile compact) */}
+      {/* Row 1: logo + icon + Post a board (mobile compact) */}
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 sm:py-3">
         <Link
           href="/"
-          className="shrink-0 text-lg font-bold tracking-tight text-[var(--foreground)] hover:opacity-90 sm:text-xl"
+          className="flex shrink-0 items-center gap-2 text-[var(--surf-primary)] hover:opacity-90 sm:gap-2.5"
         >
-          {APP_NAME}
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--foreground)] text-white sm:h-9 sm:w-9">
+            <Waves className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
+          </span>
+          <span className="text-lg font-bold tracking-tight text-[var(--surf-primary)] sm:text-xl sm:text-[var(--foreground)]">
+            {APP_NAME}
+          </span>
         </Link>
 
         <form action="/" method="GET" className="hidden flex-1 max-w-xl mx-auto sm:block">
@@ -65,7 +71,7 @@ export default function Header() {
             value={searchQ}
             onChange={(e) => setSearchQ(e.target.value)}
             placeholder="Search title, brand, city..."
-            className="w-full rounded-xl border border-[var(--surf-border)] bg-[var(--background)] px-4 py-2.5 text-sm placeholder:text-[var(--surf-muted-text)] focus:border-[var(--surf-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--surf-primary)]/20"
+            className="w-full rounded-xl border border-[var(--surf-border)] bg-[var(--surf-muted)]/30 px-4 py-2.5 text-sm placeholder:text-[var(--surf-muted-text)] focus:border-[var(--surf-primary)] focus:bg-[var(--surf-muted)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--surf-primary)]/20"
           />
         </form>
 
@@ -103,8 +109,8 @@ export default function Header() {
           )}
         </div>
       </div>
-      {/* Row 2: full-width search (mobile only) */}
-      <div className="border-t border-[var(--surf-border)] px-4 py-2 sm:hidden">
+      {/* Row 2: full-width search (mobile only) - light blue background */}
+      <div className="border-t border-[var(--surf-border)] bg-[var(--surf-card)] px-4 py-2 sm:hidden">
         <form action="/" method="GET">
           <input
             type="search"
@@ -112,7 +118,7 @@ export default function Header() {
             value={searchQ}
             onChange={(e) => setSearchQ(e.target.value)}
             placeholder="Search title, brand, city..."
-            className="w-full rounded-xl border border-[var(--surf-border)] bg-[var(--background)] px-4 py-2 text-sm placeholder:text-[var(--surf-muted-text)] focus:border-[var(--surf-primary)] focus:outline-none"
+            className="w-full rounded-xl border-0 bg-[var(--surf-muted)]/40 px-4 py-2.5 text-sm placeholder:text-[var(--surf-muted-text)] focus:bg-[var(--surf-muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--surf-primary)]/30"
           />
         </form>
       </div>

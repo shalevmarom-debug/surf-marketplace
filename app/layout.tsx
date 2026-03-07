@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
+import { BottomNav } from "@/components/BottomNav";
 import { APP_NAME } from "@/lib/constants";
 
 const geistSans = Geist({
@@ -28,12 +29,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--background)]`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--background)] pb-20 md:pb-0`}
       >
         <Suspense fallback={<header className="sticky top-0 z-50 border-b border-[var(--surf-border)] bg-[var(--surf-card)] shadow-sm h-14" />}>
           <Header />
         </Suspense>
         {children}
+        <BottomNav />
       </body>
     </html>
   );

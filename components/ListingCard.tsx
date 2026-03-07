@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Ruler, Box, Waves, MapPin } from "lucide-react";
+import { Box, Waves, MapPin, Heart, MoreHorizontal } from "lucide-react";
 
 type ListingCardProps = {
   id: string;
@@ -47,8 +47,6 @@ export function ListingCard({
   length_ft,
   volume_l,
 }: ListingCardProps) {
-  const brandLabel = brand_raw ?? brand;
-
   return (
     <Link
       href={`/listing/${id}`}
@@ -72,76 +70,94 @@ export function ListingCard({
             </div>
           )}
 
-          {/* Corner badges on image: board type, condition */}
+          {/* Corner badges on image: board type, condition (grey) or SOLD (red) */}
           <div className="absolute left-0 top-0 flex flex-wrap gap-1 p-2">
-            <span className="rounded-md bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
-              {board_type}
-            </span>
-            <span className="rounded-md bg-black/50 px-2 py-0.5 text-xs text-white/95 backdrop-blur-sm">
-              {condition}
-            </span>
+            {sold_at ? (
+              <span className="rounded-md bg-red-500 px-2.5 py-1 text-xs font-semibold uppercase text-white">
+                Sold
+              </span>
+            ) : (
+              <>
+                <span className="rounded-md bg-gray-500/80 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+                  {board_type}
+                </span>
+                <span className="rounded-md bg-gray-500/70 px-2 py-0.5 text-xs text-white/95 backdrop-blur-sm">
+                  {condition}
+                </span>
+              </>
+            )}
           </div>
 
-          {/* Price overlay bottom-left */}
-          {price_ils !== null && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
-              <p className="text-lg font-bold text-white drop-shadow-md">
-                ₪{price_ils.toLocaleString()}
-              </p>
-            </div>
-          )}
+          {/* Heart icon top-right */}
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 shadow-sm hover:bg-white"
+            aria-label="Add to favorites"
+          >
+            <Heart className="h-4 w-4 text-[var(--foreground)]" strokeWidth={2} />
+          </button>
 
-          {/* SOLD overlay */}
-          {sold_at && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-              <span className="rounded-lg bg-amber-500 px-4 py-2 text-lg font-bold uppercase tracking-wide text-white shadow">
-                Sold
+          {/* Price pill bottom-left - dark blue rounded background */}
+          {price_ils !== null && (
+            <div className="absolute bottom-2 left-2">
+              <span className="rounded-lg bg-[var(--surf-price-pill)] px-2.5 py-1.5 text-base font-bold text-white shadow">
+                ₪{price_ils.toLocaleString()}
               </span>
             </div>
           )}
+
+          {/* SOLD overlay - full card dimmed, badge already in corner */}
+          {sold_at && (
+            <div className="absolute inset-0 bg-black/30" aria-hidden />
+          )}
         </div>
 
-        <div className="p-4">
-          <h2 className="mb-1 line-clamp-2 font-semibold text-[var(--foreground)] group-hover:text-[var(--surf-primary)]">
+        <div className="p-3 md:p-4">
+          <h2 className="mb-1 line-clamp-2 font-bold text-[var(--foreground)] group-hover:text-[var(--surf-primary)]">
             {title}
           </h2>
-          <p className="mb-2 flex items-center gap-1 text-sm text-[var(--surf-muted-text)]">
+          <p className="mb-1.5 flex items-center gap-1 text-sm text-[var(--surf-muted-text)]">
             <MapPin className="h-3.5 w-5 shrink-0" />
             {displayCity}, {region}
           </p>
-          {/* Optional icon row: length, volume, fin setup */}
+          {/* Icon row: length ft, volume L + fin setup */}
           {(length_ft != null || volume_l != null || fin_setup) && (
             <div className="mb-2 flex flex-wrap items-center gap-3 text-xs text-[var(--surf-muted-text)]">
               {length_ft != null && (
                 <span className="flex items-center gap-1">
-                  <Ruler className="h-3.5 w-3.5" />
+                  <Waves className="h-3.5 w-3.5" />
                   {length_ft} ft
                 </span>
               )}
-              {volume_l != null && (
+              {(volume_l != null || fin_setup) && (
                 <span className="flex items-center gap-1">
                   <Box className="h-3.5 w-3.5" />
-                  {volume_l} L
-                </span>
-              )}
-              {fin_setup && (
-                <span className="flex items-center gap-1">
-                  <Waves className="h-3.5 w-3.5" />
-                  {fin_setup}
+                  {[volume_l != null ? `${volume_l} L` : "", fin_setup].filter(Boolean).join(" ")}
                 </span>
               )}
             </div>
           )}
-          <div className="mb-2 flex flex-wrap gap-1.5">
-            {brandLabel && (
-              <span className="rounded-full bg-[var(--surf-border)] px-2.5 py-0.5 text-xs font-medium text-[var(--foreground)]">
-                {brandLabel}
-              </span>
-            )}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-baseline gap-2">
+              {price_ils !== null && (
+                <p className="text-base font-bold text-[var(--foreground)]">
+                  ₪{price_ils.toLocaleString()}
+                </p>
+              )}
+              <p className="text-xs text-[var(--surf-muted-text)]">
+                Posted {daysAgo(created_at)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              className="rounded p-1 text-[var(--surf-muted-text)] hover:bg-[var(--surf-border)]"
+              aria-label="More options"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
           </div>
-          <p className="text-xs text-[var(--surf-muted-text)]">
-            Posted {daysAgo(created_at)}
-          </p>
         </div>
       </article>
     </Link>

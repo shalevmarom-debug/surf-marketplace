@@ -9,6 +9,7 @@
   --surf-card: #ffffff;
   --surf-border: #e0f2fe;
   --surf-muted-text: #64748b;
+  --surf-price-pill: #0c4a6e;
 }
 
 @theme inline {
