@@ -13,7 +13,7 @@ import {
 import { X } from "lucide-react";
 
 const inputClass =
-  "w-full rounded-xl border border-[var(--surf-border)] bg-[var(--surf-card)] px-3 py-2 text-sm focus:border-[var(--surf-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--surf-primary)]/20";
+  "w-full rounded-xl border border-[var(--surf-border)] bg-[var(--surf-card)] px-3 py-2.5 text-base focus:border-[var(--surf-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--surf-primary)]/20";
 
 export type FiltersBottomSheetProps = {
   open: boolean;

@@ -109,7 +109,7 @@ export default function Header() {
           )}
         </div>
       </div>
-      {/* Row 2: full-width search (mobile only) - light blue background */}
+      {/* Row 2: full-width search (mobile only) - 16px font to avoid iOS zoom */}
       <div className="border-t border-[var(--surf-border)] bg-[var(--surf-card)] px-4 py-2 sm:hidden">
         <form action="/" method="GET">
           <input
@@ -118,7 +118,7 @@ export default function Header() {
             value={searchQ}
             onChange={(e) => setSearchQ(e.target.value)}
             placeholder="Search title, brand, city..."
-            className="w-full rounded-xl border-0 bg-[var(--surf-muted)]/40 px-4 py-2.5 text-sm placeholder:text-[var(--surf-muted-text)] focus:bg-[var(--surf-muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--surf-primary)]/30"
+            className="w-full rounded-xl border-0 bg-[var(--surf-muted)]/40 px-4 py-3 text-base placeholder:text-[var(--surf-muted-text)] focus:bg-[var(--surf-muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--surf-primary)]/30"
           />
         </form>
       </div>

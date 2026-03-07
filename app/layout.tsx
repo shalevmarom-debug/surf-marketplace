@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -21,6 +21,11 @@ export const metadata: Metadata = {
   description: "Buy & sell surfboards across Israel",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--background)] pb-20 md:pb-0`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--background)] pb-28 md:pb-0`}
       >
         <Suspense fallback={<header className="sticky top-0 z-50 border-b border-[var(--surf-border)] bg-[var(--surf-card)] shadow-sm h-14" />}>
           <Header />

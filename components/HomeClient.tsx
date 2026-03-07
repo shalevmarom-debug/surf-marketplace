@@ -123,7 +123,7 @@ export function HomeClient({
           <button
             type="button"
             onClick={() => setFiltersOpen(true)}
-            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-[var(--surf-border)] bg-[var(--background)] px-3 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surf-border)]"
+            className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-xl border border-[var(--surf-border)] bg-[var(--background)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surf-border)]"
           >
             <Filter className="h-4 w-4" />
             Filters
@@ -132,7 +132,7 @@ export function HomeClient({
             <button
               type="button"
               onClick={() => setSortDropdownOpen((o) => !o)}
-              className="flex items-center gap-1 rounded-xl border border-[var(--surf-border)] bg-[var(--background)] px-3 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surf-border)]"
+              className="flex min-h-[44px] min-w-[44px] items-center gap-1 rounded-xl border border-[var(--surf-border)] bg-[var(--background)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surf-border)]"
               aria-expanded={sortDropdownOpen}
               aria-haspopup="listbox"
             >
@@ -167,7 +167,7 @@ export function HomeClient({
             <Link
               key={chip.label}
               href={chip.href}
-              className="shrink-0 rounded-full bg-[var(--surf-border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] hover:bg-[var(--surf-primary)] hover:text-white"
+              className="flex min-h-[44px] shrink-0 items-center rounded-full bg-[var(--surf-border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surf-primary)] hover:text-white"
             >
               {chip.label}
             </Link>
@@ -228,7 +228,7 @@ export function HomeClient({
           <p className="text-[var(--surf-muted-text)]">No listings match your filters.</p>
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {listingsWithImage.map((listing) => (
             <ListingCard
               key={listing.id}
