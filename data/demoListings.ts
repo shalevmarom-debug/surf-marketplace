@@ -93,6 +93,7 @@ function nextListing(
     : (imageCount === 0 ? [] : Array.from({ length: imageCount }, (_, j) => (i + j) % 15));
 
   return {
+    ...overrides,
     title: overrides.title ?? "Surfboard",
     description: overrides.description ?? "",
     price_ils: overrides.price_ils ?? 2000,
@@ -110,7 +111,6 @@ function nextListing(
     repairs,
     fins_included,
     imageIndices,
-    ...overrides,
   };
 }
 
