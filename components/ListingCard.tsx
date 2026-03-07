@@ -55,7 +55,7 @@ export function ListingCard({
       <article
         className={`overflow-hidden rounded-xl border border-[var(--surf-border)] bg-[var(--surf-card)] shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 md:rounded-2xl ${sold_at ? "opacity-90" : ""}`}
       >
-        {/* Image: smaller on mobile (1:1), 16:9 on desktop */}
+        {/* Image: 1:1 mobile (compact), 16:9 desktop */}
         <div className="relative aspect-square w-full overflow-hidden bg-[var(--surf-border)] md:aspect-video">
           {primaryImageUrl ? (
             <img
@@ -88,14 +88,14 @@ export function ListingCard({
             )}
           </div>
 
-          {/* Heart - touch target 44px on mobile */}
+          {/* Heart - smaller tap area on mobile to keep card compact */}
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="absolute right-1 top-1 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 shadow-sm hover:bg-white md:right-2 md:top-2 md:min-h-0 md:min-w-0 md:p-1.5"
+            className="absolute right-1 top-1 flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full bg-white/90 shadow-sm hover:bg-white md:right-2 md:top-2 md:min-h-[44px] md:min-w-[44px] md:p-1.5"
             aria-label="Add to favorites"
           >
-            <Heart className="h-4 w-4 text-[var(--foreground)]" strokeWidth={2} />
+            <Heart className="h-3.5 w-3.5 text-[var(--foreground)] md:h-4 md:w-4" strokeWidth={2} />
           </button>
 
           {/* Price pill - smaller on mobile */}
@@ -113,17 +113,17 @@ export function ListingCard({
           )}
         </div>
 
-        <div className="p-2 md:p-4">
-          <h2 className="mb-0.5 line-clamp-2 text-sm font-bold text-[var(--foreground)] group-hover:text-[var(--surf-primary)] md:mb-1 md:text-base">
+        <div className="p-1.5 md:p-4">
+          <h2 className="mb-0.5 line-clamp-1 text-xs font-bold text-[var(--foreground)] group-hover:text-[var(--surf-primary)] md:mb-1 md:line-clamp-2 md:text-base">
             {title}
           </h2>
-          <p className="mb-1 flex items-center gap-1 text-xs text-[var(--surf-muted-text)] md:mb-1.5 md:text-sm">
+          <p className="mb-0.5 flex items-center gap-0.5 text-[10px] text-[var(--surf-muted-text)] md:mb-1.5 md:text-sm">
             <MapPin className="h-3 w-4 shrink-0 md:h-3.5 md:w-5" />
-            {displayCity}, {region}
+            <span className="truncate">{displayCity}, {region}</span>
           </p>
-          {/* Icon row - compact on mobile */}
+          {/* Icon row - hidden on mobile to keep card compact; show on md+ */}
           {(length_ft != null || volume_l != null || fin_setup) && (
-            <div className="mb-1 flex flex-wrap items-center gap-2 text-[10px] text-[var(--surf-muted-text)] md:mb-2 md:gap-3 md:text-xs">
+            <div className="mb-1 hidden flex-wrap items-center gap-2 text-[10px] text-[var(--surf-muted-text)] md:mb-2 md:flex md:gap-3 md:text-xs">
               {length_ft != null && (
                 <span className="flex items-center gap-0.5 md:gap-1">
                   <Waves className="h-3 w-3 md:h-3.5 md:w-3.5" />
@@ -138,24 +138,24 @@ export function ListingCard({
               )}
             </div>
           )}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex min-h-[44px] items-baseline gap-2 md:min-h-0">
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex min-h-[36px] min-w-0 flex-1 items-baseline gap-1 md:min-h-[44px] md:min-w-0">
               {price_ils !== null && (
-                <p className="text-sm font-bold text-[var(--foreground)] md:text-base">
+                <p className="truncate text-xs font-bold text-[var(--foreground)] md:text-base">
                   ₪{price_ils.toLocaleString()}
                 </p>
               )}
-              <p className="text-[10px] text-[var(--surf-muted-text)] md:text-xs">
+              <p className="shrink-0 text-[10px] text-[var(--surf-muted-text)] md:text-xs">
                 Posted {daysAgo(created_at)}
               </p>
             </div>
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-[var(--surf-muted-text)] hover:bg-[var(--surf-border)] md:min-h-0 md:min-w-0 md:p-1"
+              className="flex min-h-[36px] min-w-[36px] shrink-0 items-center justify-center rounded text-[var(--surf-muted-text)] hover:bg-[var(--surf-border)] md:min-h-[44px] md:min-w-[44px] md:p-1"
               aria-label="More options"
             >
-              <MoreHorizontal className="h-4 w-4" />
+              <MoreHorizontal className="h-3.5 w-3.5 md:h-4 md:w-4" />
             </button>
           </div>
         </div>
