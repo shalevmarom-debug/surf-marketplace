@@ -53,6 +53,16 @@ export default function NewListingPage() {
   const [primaryImageIndex, setPrimaryImageIndex] = useState(0);
 
   useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace("/login?redirect=/new-listing");
+      }
+    }
+    checkAuth();
+  }, [router]);
+
+  useEffect(() => {
     if (!brand.trim()) {
       setBrandSuggestions([]);
       return;

@@ -1,9 +1,13 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") ?? "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -23,6 +27,8 @@ export default function LoginPage() {
       setStatus(`Error: ${error.message}`);
     } else {
       setStatus("Login successful!");
+      window.location.href = redirectTo;
+      return;
     }
 
     setLoading(false);
@@ -65,6 +71,12 @@ export default function LoginPage() {
           </button>
         </form>
         {status && <p className="mt-4 text-center text-sm text-[var(--surf-muted-text)]">{status}</p>}
+        <p className="mt-4 text-center text-sm text-[var(--surf-muted-text)]">
+          Don&apos;t have an account?{" "}
+          <Link href="/sign-up" className="font-medium text-[var(--surf-primary)] hover:underline">
+            Sign up
+          </Link>
+        </p>
       </div>
     </main>
   );
