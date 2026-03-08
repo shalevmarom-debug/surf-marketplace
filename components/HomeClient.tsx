@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FiltersPanel } from "@/components/FiltersPanel";
+import { DesktopFiltersBar } from "@/components/listing-filters/DesktopFiltersBar";
+import { MobileFiltersButtonRow } from "@/components/listing-filters/MobileFiltersSheet";
 import { ListingCard } from "@/components/ListingCard";
 import { ArrowUp } from "lucide-react";
 
@@ -49,18 +50,18 @@ export function HomeClient({
   listingsWithImage,
   error,
   citiesWithCount,
-  defaultRegion: defaultRegionProp,
-  defaultCity,
-  defaultBoardType,
-  defaultCondition,
-  defaultFinSetup,
-  defaultConstruction,
-  defaultBrand,
-  defaultMinPrice,
-  defaultMaxPrice,
-  defaultQ,
-  defaultIncludeSold,
-  defaultSort,
+  defaultRegion: _defaultRegion,
+  defaultCity: _defaultCity,
+  defaultBoardType: _defaultBoardType,
+  defaultCondition: _defaultCondition,
+  defaultFinSetup: _defaultFinSetup,
+  defaultConstruction: _defaultConstruction,
+  defaultBrand: _defaultBrand,
+  defaultMinPrice: _defaultMinPrice,
+  defaultMaxPrice: _defaultMaxPrice,
+  defaultQ: _defaultQ,
+  defaultIncludeSold: _defaultIncludeSold,
+  defaultSort: _defaultSort,
 }: HomeClientProps) {
   const [showBackToTop, setShowBackToTop] = useState(false);
 
@@ -72,23 +73,12 @@ export function HomeClient({
 
   return (
     <>
-      {/* Filters panel – same on mobile and desktop */}
-      <div className="mb-6 md:mb-8">
-        <FiltersPanel
-          defaultRegion={defaultRegionProp}
-          defaultCity={defaultCity}
-          defaultBoardType={defaultBoardType}
-          defaultCondition={defaultCondition}
-          defaultFinSetup={defaultFinSetup}
-          defaultConstruction={defaultConstruction}
-          defaultBrand={defaultBrand}
-          defaultMinPrice={defaultMinPrice}
-          defaultMaxPrice={defaultMaxPrice}
-          defaultQ={defaultQ}
-          defaultIncludeSold={defaultIncludeSold}
-          defaultSort={defaultSort}
-          citiesWithCount={citiesWithCount}
-        />
+      {/* Mobile: compact [Filters] [Sort] row + bottom sheet */}
+      <MobileFiltersButtonRow citiesWithCount={citiesWithCount} />
+
+      {/* Desktop: horizontal filter bar */}
+      <div className="mb-6 hidden md:block md:mb-8">
+        <DesktopFiltersBar citiesWithCount={citiesWithCount} />
       </div>
 
       {error && (
