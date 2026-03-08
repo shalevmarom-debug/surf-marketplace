@@ -5,6 +5,12 @@ import { CitySelectHe } from "@/components/CitySelectHe";
 import { BOARD_TYPES, REGIONS, CONDITIONS, FIN_SETUPS, CONSTRUCTIONS } from "@/lib/validations/listing";
 import { useState } from "react";
 
+const SORT_OPTIONS = [
+  { value: "newest", label: "Newest" },
+  { value: "price_asc", label: "Price low–high" },
+  { value: "price_desc", label: "Price high–low" },
+] as const;
+
 type FiltersPanelProps = {
   defaultRegion: string;
   defaultCity: string;
@@ -47,9 +53,8 @@ export function FiltersPanel(props: FiltersPanelProps) {
     <div className="mb-6 rounded-2xl border border-[var(--surf-border)] bg-[var(--surf-card)] p-3 shadow-sm md:mb-8 md:p-4">
       <form action="/" method="GET" className="space-y-3 md:space-y-4">
         <input type="hidden" name="q" value={defaultQ} />
-        <input type="hidden" name="sort" value={defaultSort} />
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <div>
             <label className="mb-1 block text-xs font-medium text-[var(--surf-muted-text)]" htmlFor="city">City</label>
             <CitySelectHe value={city} onChange={setCity} placeholder="Search city..." optionsWithCount={citiesWithCount} />
@@ -69,6 +74,14 @@ export function FiltersPanel(props: FiltersPanelProps) {
           <div>
             <label className="mb-1 block text-xs font-medium text-[var(--surf-muted-text)]" htmlFor="maxPrice">Max price (ILS)</label>
             <input id="maxPrice" name="maxPrice" type="number" min={0} defaultValue={defaultMaxPrice} className={inputClass} placeholder="Any" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-[var(--surf-muted-text)]" htmlFor="sort">Sort</label>
+            <select id="sort" name="sort" defaultValue={defaultSort} className={inputClass}>
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
           </div>
         </div>
 

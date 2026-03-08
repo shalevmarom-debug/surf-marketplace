@@ -1,12 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { FiltersPanel } from "@/components/FiltersPanel";
-import { FiltersBottomSheet } from "@/components/FiltersBottomSheet";
 import { ListingCard } from "@/components/ListingCard";
-import { Filter, ChevronDown, ArrowUp } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 
 type ListingWithImage = {
   id: string;
@@ -48,22 +45,6 @@ type HomeClientProps = {
   defaultSort: string;
 };
 
-const SORT_OPTIONS = [
-  { value: "newest", label: "Newest" },
-  { value: "price_asc", label: "Price low–high" },
-  { value: "price_desc", label: "Price high–low" },
-] as const;
-
-function buildQueryString(params: Record<string, string>, overrides?: Record<string, string>): string {
-  const merged = { ...params, ...overrides };
-  const search = new URLSearchParams();
-  for (const [k, v] of Object.entries(merged)) {
-    if (v != null && v !== "") search.set(k, v);
-  }
-  const s = search.toString();
-  return s ? `?${s}` : "";
-}
-
 export function HomeClient({
   listingsWithImage,
   error,
@@ -81,25 +62,7 @@ export function HomeClient({
   defaultIncludeSold,
   defaultSort,
 }: HomeClientProps) {
-  const searchParams = useSearchParams();
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
-
-  const currentParams: Record<string, string> = {
-    region: searchParams.get("region") ?? "",
-    city: searchParams.get("city") ?? "",
-    boardType: searchParams.get("boardType") ?? "",
-    condition: searchParams.get("condition") ?? "",
-    finSetup: searchParams.get("finSetup") ?? "",
-    construction: searchParams.get("construction") ?? "",
-    brand: searchParams.get("brand") ?? "",
-    minPrice: searchParams.get("minPrice") ?? "",
-    maxPrice: searchParams.get("maxPrice") ?? "",
-    q: searchParams.get("q") ?? "",
-    sort: searchParams.get("sort") ?? defaultSort,
-    ...(defaultIncludeSold ? { includeSold: "1" } : {}),
-  };
 
   useEffect(() => {
     const onScroll = () => setShowBackToTop(window.scrollY > 800);
@@ -107,95 +70,10 @@ export function HomeClient({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const quickChips = [
-    { label: "Shortboard", href: buildQueryString(currentParams, { boardType: "Shortboard" }) },
-    { label: "Fish", href: buildQueryString(currentParams, { boardType: "Fish" }) },
-    { label: "Longboard", href: buildQueryString(currentParams, { boardType: "Longboard" }) },
-    { label: "Under ₪1000", href: buildQueryString(currentParams, { maxPrice: "1000" }) },
-    { label: "Nearby", href: buildQueryString(currentParams) },
-  ];
-
   return (
     <>
-      {/* Mobile: sticky bar with Filters, Sort, chips */}
-      <div className="sticky top-[calc(var(--header-height, 0px)+0px)] z-30 -mx-4 border-b border-[var(--surf-border)] bg-[var(--surf-card)] px-4 pb-2 pt-2 md:hidden">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setFiltersOpen(true)}
-            className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-xl border border-[var(--surf-border)] bg-[var(--background)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surf-border)]"
-          >
-            <Filter className="h-4 w-4" />
-            Filters
-          </button>
-          <div className="relative shrink-0">
-            <button
-              type="button"
-              onClick={() => setSortDropdownOpen((o) => !o)}
-              className="flex min-h-[44px] min-w-[44px] items-center gap-1 rounded-xl border border-[var(--surf-border)] bg-[var(--background)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surf-border)]"
-              aria-expanded={sortDropdownOpen}
-              aria-haspopup="listbox"
-            >
-              {SORT_OPTIONS.find((o) => o.value === currentParams.sort)?.label ?? "Sort"}
-              <ChevronDown className={`h-4 w-4 transition ${sortDropdownOpen ? "rotate-180" : ""}`} />
-            </button>
-            {sortDropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setSortDropdownOpen(false)} aria-hidden />
-                <ul
-                  role="listbox"
-                  className="absolute left-0 top-full z-50 mt-1 min-w-[180px] rounded-xl border border-[var(--surf-border)] bg-[var(--surf-card)] py-1 shadow-lg"
-                >
-                  {SORT_OPTIONS.map((opt) => (
-                    <li key={opt.value} role="option" aria-selected={currentParams.sort === opt.value}>
-                      <Link
-                        href={buildQueryString(currentParams, { sort: opt.value })}
-                        className="block px-4 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--surf-border)]"
-                        onClick={() => setSortDropdownOpen(false)}
-                      >
-                        {opt.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>
-        </div>
-        <div className="mt-2 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {quickChips.map((chip) => (
-            <Link
-              key={chip.label}
-              href={chip.href}
-              className="flex min-h-[44px] shrink-0 items-center rounded-full bg-[var(--surf-border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surf-primary)] hover:text-white"
-            >
-              {chip.label}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      <FiltersBottomSheet
-        open={filtersOpen}
-        onClose={() => setFiltersOpen(false)}
-        defaultRegion={defaultRegionProp}
-        defaultCity={defaultCity}
-        defaultBoardType={defaultBoardType}
-        defaultCondition={defaultCondition}
-        defaultFinSetup={defaultFinSetup}
-        defaultConstruction={defaultConstruction}
-        defaultBrand={defaultBrand}
-        defaultMinPrice={defaultMinPrice}
-        defaultMaxPrice={defaultMaxPrice}
-        defaultQ={defaultQ}
-        defaultIncludeSold={defaultIncludeSold}
-        defaultSort={defaultSort}
-        citiesWithCount={citiesWithCount}
-        resultCount={listingsWithImage.length}
-      />
-
-      {/* Desktop: Filters panel (tighter) */}
-      <div className="mb-6 hidden md:block">
+      {/* Filters panel – same on mobile and desktop */}
+      <div className="mb-6 md:mb-8">
         <FiltersPanel
           defaultRegion={defaultRegionProp}
           defaultCity={defaultCity}
