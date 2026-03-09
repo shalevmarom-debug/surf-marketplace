@@ -138,14 +138,14 @@ export function ListingCard({
               )}
             </div>
           )}
-          <div className="flex items-center justify-between gap-1">
-            <div className="flex min-h-[36px] min-w-0 flex-1 items-baseline gap-1 md:min-h-[44px] md:min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
+            <div className="flex min-w-0 flex-1 items-baseline gap-1 overflow-hidden">
               {price_ils !== null && (
-                <p className="truncate text-xs font-bold text-[var(--foreground)] md:text-base">
+                <p className="shrink-0 text-xs font-bold text-[var(--foreground)] md:text-base">
                   ₪{price_ils.toLocaleString()}
                 </p>
               )}
-              <p className="shrink-0 text-[10px] text-[var(--surf-muted-text)] md:text-xs">
+              <p className="min-w-0 truncate text-[10px] text-[var(--surf-muted-text)] md:text-xs">
                 Posted {daysAgo(created_at)}
               </p>
             </div>

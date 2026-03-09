@@ -60,7 +60,7 @@ export default function Header() {
           )}
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2 text-[var(--surf-primary)] hover:opacity-90 sm:gap-2.5"
+          className="flex min-w-0 shrink-0 items-center gap-2 overflow-hidden text-[var(--surf-primary)] hover:opacity-90 sm:gap-2.5"
         >
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--foreground)] text-white sm:h-9 sm:w-9">
             <Waves className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />

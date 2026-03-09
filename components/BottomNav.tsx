@@ -8,7 +8,8 @@ export function BottomNav() {
   const pathname = usePathname();
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-[var(--surf-border)] bg-[var(--surf-card)]/95 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-sm md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-[var(--surf-border)] bg-[var(--surf-card)]/95 px-1 pt-2 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-sm md:hidden"
+      style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
       aria-label="Main navigation"
     >
       <Link
