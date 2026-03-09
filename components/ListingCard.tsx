@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Box, Waves, MapPin, Heart, MoreHorizontal } from "lucide-react";
+import { Box, Waves, MapPin, MoreHorizontal } from "lucide-react";
 
 type ListingCardProps = {
   id: string;
@@ -87,16 +87,6 @@ export function ListingCard({
               </>
             )}
           </div>
-
-          {/* Heart - smaller tap area on mobile to keep card compact */}
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="absolute right-1 top-1 flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full bg-white/90 shadow-sm hover:bg-white md:right-2 md:top-2 md:min-h-[44px] md:min-w-[44px] md:p-1.5"
-            aria-label="Add to favorites"
-          >
-            <Heart className="h-3.5 w-3.5 text-[var(--foreground)] md:h-4 md:w-4" strokeWidth={2} />
-          </button>
 
           {/* Price pill - smaller on mobile */}
           {price_ils !== null && (
