@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { APP_NAME } from "@/lib/constants";
-import { Waves } from "lucide-react";
+import { Waves, ArrowLeft } from "lucide-react";
 
 type UserInfo = { email: string | null } | null;
 
 export default function Header() {
+  const pathname = usePathname();
   const [user, setUser] = useState<UserInfo>(null);
   const [loading, setLoading] = useState(true);
   const headerRef = useRef<HTMLElement>(null);
@@ -45,6 +47,17 @@ export default function Header() {
     <header ref={headerRef} className="sticky top-0 z-50 border-b border-[var(--surf-border)] bg-[var(--surf-card)] shadow-sm">
       {/* Row 1: logo + icon + Post a board (mobile compact) */}
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 sm:py-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+          {pathname !== "/" && (
+            <Link
+              href="/"
+              className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-[var(--surf-muted-text)] hover:bg-[var(--surf-border)] hover:text-[var(--foreground)] sm:px-3"
+              aria-label="Back to feed"
+            >
+              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} />
+              <span className="hidden sm:inline">חזרה לפיד</span>
+            </Link>
+          )}
         <Link
           href="/"
           className="flex shrink-0 items-center gap-2 text-[var(--surf-primary)] hover:opacity-90 sm:gap-2.5"
@@ -56,6 +69,7 @@ export default function Header() {
             {APP_NAME}
           </span>
         </Link>
+        </div>
 
         <div className="flex shrink-0 items-center gap-2">
           {loading ? (
