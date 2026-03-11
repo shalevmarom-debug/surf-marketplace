@@ -1,5 +1,5 @@
 -- Auth without email: profiles have username (unique), first_name, last_name.
--- Supabase Auth still uses a unique "email" per user; we use internal addresses username@surf.local.
+-- Supabase Auth still uses a unique "email" per user; we use internal addresses username@example.com.
 
 -- 1) Ensure profiles table exists (id only)
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -32,4 +32,4 @@ DROP POLICY IF EXISTS profiles_select_authenticated ON public.profiles;
 CREATE POLICY profiles_select_authenticated ON public.profiles
   FOR SELECT USING (auth.role() = 'authenticated');
 
-COMMENT ON COLUMN public.profiles.username IS 'Unique login name; auth uses username@surf.local internally.';
+COMMENT ON COLUMN public.profiles.username IS 'Unique login name; auth uses username@example.com internally.';

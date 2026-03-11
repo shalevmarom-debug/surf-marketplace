@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
-const INTERNAL_EMAIL_DOMAIN = "@surf.local";
+const INTERNAL_EMAIL_DOMAIN = "@example.com";
 
 function normalizeUsername(raw: string): string {
   return raw.trim().toLowerCase();

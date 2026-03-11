@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-const INTERNAL_EMAIL_DOMAIN = "@surf.local";
+const INTERNAL_EMAIL_DOMAIN = "@example.com";
 
 function toInternalEmail(username: string): string {
   return username.trim().toLowerCase() + INTERNAL_EMAIL_DOMAIN;
