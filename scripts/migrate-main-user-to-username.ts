@@ -18,7 +18,9 @@ dotenv.config({ path: path.join(process.cwd(), ".env.local") });
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const userId =
-  process.env.NEXT_PUBLIC_ADMIN_USER_ID ?? process.env.SEED_USER_ID ?? null;
+  (process.env.NEXT_PUBLIC_ADMIN_USER_ID ??
+    process.env.SEED_USER_ID ??
+    null) as string | null;
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local");
@@ -43,7 +45,7 @@ async function main() {
   console.log("New auth email:", INTERNAL_EMAIL);
   console.log("Profile: username=%s, first_name=%s, last_name=%s", USERNAME, FIRST_NAME, LAST_NAME);
 
-  const { error: authError } = await supabase.auth.admin.updateUserById(userId, {
+  const { error: authError } = await supabase.auth.admin.updateUserById(userId as string, {
     email: INTERNAL_EMAIL,
     email_confirm: true,
   });
