@@ -5,10 +5,16 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
+const INTERNAL_EMAIL_DOMAIN = "@surf.local";
+
+function toInternalEmail(username: string): string {
+  return username.trim().toLowerCase() + INTERNAL_EMAIL_DOMAIN;
+}
+
 function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "/";
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -18,8 +24,9 @@ function LoginForm() {
     setLoading(true);
     setStatus(null);
 
+    const internalEmail = toInternalEmail(username);
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: internalEmail,
       password,
     });
 
@@ -38,14 +45,15 @@ function LoginForm() {
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1 text-[var(--foreground)]" htmlFor="email">Email</label>
+          <label className="block text-sm font-medium mb-1 text-[var(--foreground)]" htmlFor="username">Username</label>
           <input
-            id="email"
-            type="email"
+            id="username"
+            type="text"
             required
+            autoComplete="username"
             className="w-full rounded-xl border border-[var(--surf-border)] bg-[var(--background)] px-3 py-2 text-sm focus:border-[var(--surf-primary)] focus:outline-none"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
           />
         </div>
         <div>
@@ -55,6 +63,7 @@ function LoginForm() {
             type="password"
             required
             minLength={6}
+            autoComplete="current-password"
             className="w-full rounded-xl border border-[var(--surf-border)] bg-[var(--background)] px-3 py-2 text-sm focus:border-[var(--surf-primary)] focus:outline-none"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
