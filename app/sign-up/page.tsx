@@ -75,8 +75,8 @@ export default function SignupPage() {
       return;
     }
 
-    setStatus("Signup successful! You can now log in.");
     setLoading(false);
+    window.location.href = "/";
   }
 
   return (
