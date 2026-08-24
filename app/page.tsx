@@ -79,7 +79,9 @@ async function fetchListings(filters: ListingFilters): Promise<{ data: Listing[]
   );
 
   const { data, error } = await withImages;
-  if (!error) return { data: (data ?? []) as Listing[], errorMessage: null };
+  if (!error) {
+    return { data: (data ?? []) as Listing[], errorMessage: null };
+  }
 
   console.error("[feed] listings query with images failed:", error.message);
 
