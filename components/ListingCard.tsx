@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Box, Waves, MapPin, MoreHorizontal } from "lucide-react";
+import { Box, Waves, MapPin } from "lucide-react";
 
 type ListingCardProps = {
   id: string;
@@ -128,7 +128,7 @@ export function ListingCard({
               )}
             </div>
           )}
-          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <div className="flex min-w-0 flex-1 items-baseline gap-1 overflow-hidden">
               {price_ils !== null && (
                 <p className="shrink-0 text-xs font-bold text-[var(--foreground)] md:text-base">
@@ -139,14 +139,6 @@ export function ListingCard({
                 Posted {daysAgo(created_at)}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-              className="flex min-h-[36px] min-w-[36px] shrink-0 items-center justify-center rounded text-[var(--surf-muted-text)] hover:bg-[var(--surf-border)] md:min-h-[44px] md:min-w-[44px] md:p-1"
-              aria-label="More options"
-            >
-              <MoreHorizontal className="h-3.5 w-3.5 md:h-4 md:w-4" />
-            </button>
           </div>
         </div>
       </article>

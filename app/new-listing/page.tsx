@@ -178,7 +178,9 @@ export default function NewListingPage() {
     }
     const userId = userData.user.id;
 
-    const { error: profileError } = await supabase.from("profiles").upsert({ id: userId });
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .upsert({ id: userId }, { onConflict: "id", ignoreDuplicates: true });
     if (profileError) {
       setStatus(`Profile error: ${profileError.message}`);
       setLoading(false);

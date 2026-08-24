@@ -28,7 +28,7 @@ export default function MyListingsPage() {
       const { data: userData, error: userError } = await supabase.auth.getUser();
 
       if (userError || !userData.user) {
-        router.replace("/login");
+        router.replace("/login?redirect=/my-listings");
         return;
       }
 

@@ -17,7 +17,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS profiles_username_lower_idx
   ON public.profiles (lower(trim(username)))
   WHERE username IS NOT NULL AND trim(username) <> '';
 
--- 4) RLS: users insert/update own profile; anyone authenticated can read (e.g. "posted by X")
+-- 4) RLS: users insert/update own profile; authenticated users can read
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS profiles_insert_own ON public.profiles;

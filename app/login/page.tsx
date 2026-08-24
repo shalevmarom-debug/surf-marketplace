@@ -4,12 +4,7 @@ import { FormEvent, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-
-const INTERNAL_EMAIL_DOMAIN = "@example.com";
-
-function toInternalEmail(username: string): string {
-  return username.trim().toLowerCase() + INTERNAL_EMAIL_DOMAIN;
-}
+import { toInternalEmail } from "@/lib/auth";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -32,13 +27,11 @@ function LoginForm() {
 
     if (error) {
       setStatus(`Error: ${error.message}`);
-    } else {
-      setStatus("Login successful!");
-      window.location.href = redirectTo;
+      setLoading(false);
       return;
     }
 
-    setLoading(false);
+    window.location.href = redirectTo;
   }
 
   return (
@@ -80,7 +73,10 @@ function LoginForm() {
       {status && <p className="mt-4 text-center text-sm text-[var(--surf-muted-text)]">{status}</p>}
       <p className="mt-4 text-center text-sm text-[var(--surf-muted-text)]">
         Don&apos;t have an account?{" "}
-        <Link href="/sign-up" className="font-medium text-[var(--surf-primary)] hover:underline">
+        <Link
+          href={redirectTo !== "/" ? `/sign-up?redirect=${encodeURIComponent(redirectTo)}` : "/sign-up"}
+          className="font-medium text-[var(--surf-primary)] hover:underline"
+        >
           Sign up
         </Link>
       </p>

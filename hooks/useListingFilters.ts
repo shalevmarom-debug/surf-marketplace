@@ -13,7 +13,6 @@ export type ListingFilterParams = {
   brand: string;
   minPrice: string;
   maxPrice: string;
-  q: string;
   includeSold: boolean;
   sort: string;
 };
@@ -29,7 +28,6 @@ function getParamsFromSearchParams(searchParams: ReturnType<typeof useSearchPara
     brand: searchParams.get("brand") ?? "",
     minPrice: searchParams.get("minPrice") ?? "",
     maxPrice: searchParams.get("maxPrice") ?? "",
-    q: searchParams.get("q") ?? "",
     includeSold: searchParams.get("includeSold") === "1" || searchParams.get("includeSold") === "true",
     sort: searchParams.get("sort") ?? "newest",
   };
@@ -46,7 +44,6 @@ function buildQueryString(params: ListingFilterParams): string {
   if (params.brand) search.set("brand", params.brand);
   if (params.minPrice) search.set("minPrice", params.minPrice);
   if (params.maxPrice) search.set("maxPrice", params.maxPrice);
-  if (params.q) search.set("q", params.q);
   if (params.includeSold) search.set("includeSold", "1");
   if (params.sort && params.sort !== "newest") search.set("sort", params.sort);
   const s = search.toString();

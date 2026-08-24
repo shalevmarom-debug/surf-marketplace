@@ -7,7 +7,23 @@ import { supabase } from "@/lib/supabaseClient";
 import { APP_NAME } from "@/lib/constants";
 import { Waves, ArrowLeft, Plus, List, LogOut } from "lucide-react";
 
-type UserInfo = { email: string | null } | null;
+type UserInfo = {
+  id: string;
+  username: string | null;
+  firstName: string | null;
+} | null;
+
+async function loadProfile(userId: string): Promise<{ username: string | null; firstName: string | null }> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("username, first_name")
+    .eq("id", userId)
+    .maybeSingle();
+  return {
+    username: data?.username ?? null,
+    firstName: data?.first_name ?? null,
+  };
+}
 
 export default function Header() {
   const pathname = usePathname();
@@ -29,12 +45,22 @@ export default function Header() {
   useEffect(() => {
     async function loadUser() {
       const { data } = await supabase.auth.getUser();
-      setUser({ email: data.user?.email ?? null });
+      if (data.user) {
+        const profile = await loadProfile(data.user.id);
+        setUser({ id: data.user.id, username: profile.username, firstName: profile.firstName });
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     }
     loadUser();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser({ email: session?.user?.email ?? null });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const profile = await loadProfile(session.user.id);
+        setUser({ id: session.user.id, username: profile.username, firstName: profile.firstName });
+      } else {
+        setUser(null);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -43,9 +69,10 @@ export default function Header() {
     await supabase.auth.signOut();
   }
 
+  const displayLabel = user?.firstName || (user?.username ? `@${user.username}` : null);
+
   return (
     <header ref={headerRef} className="sticky top-0 z-50 border-b border-[var(--surf-border)] bg-[var(--surf-card)] shadow-sm">
-      {/* Row 1: logo + icon + Post a board (mobile compact) */}
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-4 sm:py-3">
         <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
           {pathname !== "/" && (
@@ -58,24 +85,29 @@ export default function Header() {
               <span className="hidden sm:inline">חזרה לפיד</span>
             </Link>
           )}
-        <Link
-          href="/"
-          className="flex min-w-0 shrink-0 items-center gap-2 overflow-hidden text-[var(--surf-primary)] hover:opacity-90 sm:gap-2.5"
-        >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--foreground)] text-white sm:h-9 sm:w-9">
-            <Waves className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
-          </span>
-          <span className="hidden truncate text-lg font-bold tracking-tight text-[var(--surf-primary)] sm:block sm:text-xl sm:text-[var(--foreground)]">
-            {APP_NAME}
-          </span>
-        </Link>
+          <Link
+            href="/"
+            className="flex min-w-0 shrink-0 items-center gap-2 overflow-hidden text-[var(--surf-primary)] hover:opacity-90 sm:gap-2.5"
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--foreground)] text-white sm:h-9 sm:w-9">
+              <Waves className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
+            </span>
+            <span className="hidden truncate text-lg font-bold tracking-tight text-[var(--surf-primary)] sm:block sm:text-xl sm:text-[var(--foreground)]">
+              {APP_NAME}
+            </span>
+          </Link>
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           {loading ? (
             <span className="text-xs text-[var(--surf-muted-text)]">...</span>
-          ) : user?.email ? (
+          ) : user ? (
             <>
+              {displayLabel && (
+                <span className="hidden max-w-[120px] truncate text-xs font-medium text-[var(--surf-muted-text)] sm:inline md:max-w-[160px]">
+                  {displayLabel}
+                </span>
+              )}
               <Link
                 href="/new-listing"
                 className="flex items-center gap-1.5 rounded-xl bg-[var(--surf-primary)] px-2 py-2 text-sm font-semibold text-white hover:bg-[var(--surf-primary-hover)] transition-colors sm:px-4 sm:py-2.5"

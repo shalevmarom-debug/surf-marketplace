@@ -36,8 +36,7 @@ function displayCity(listing: Listing): string {
 export default function ListingDetailsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [listing, setListing] = useState<Listing | null>(null);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -46,23 +45,33 @@ export default function ListingDetailsPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    async function load() {
-      const { data: userData } = await supabase.auth.getUser();
-      setCurrentUserId(userData?.user?.id ?? null);
-      setCheckingAuth(false);
-      setLoading(true);
+    if (!params.id) return;
 
-      const { data, error } = await supabase
-        .from("listings")
-        .select(
-          `id, user_id, title, description, price_ils, city, city_he, city_other, region, board_type,
-           length_ft, volume_l, brand, brand_raw, condition, repairs, fins_included,
-           fin_setup, construction, whatsapp_phone, sold_at, created_at`
-        )
-        .eq("id", params.id)
-        .single();
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setStatus(null);
+
+      const [{ data: userData }, { data, error }] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase
+          .from("listings")
+          .select(
+            `id, user_id, title, description, price_ils, city, city_he, city_other, region, board_type,
+             length_ft, volume_l, brand, brand_raw, condition, repairs, fins_included,
+             fin_setup, construction, whatsapp_phone, sold_at, created_at`
+          )
+          .eq("id", params.id)
+          .single(),
+      ]);
+
+      if (cancelled) return;
+
+      setCurrentUserId(userData?.user?.id ?? null);
 
       if (error || !data) {
+        setListing(null);
         setStatus(error?.message ?? "Listing not found");
         setLoading(false);
         return;
@@ -78,7 +87,7 @@ export default function ListingDetailsPage() {
           .eq("user_id", userData.user.id)
           .eq("listing_id", params.id)
           .maybeSingle();
-        setIsFavorite(!!fav?.id);
+        if (!cancelled) setIsFavorite(!!fav?.id);
       }
 
       const { data: imagesData, error: imagesError } = await supabase
@@ -88,21 +97,21 @@ export default function ListingDetailsPage() {
         .order("is_primary", { ascending: false })
         .order("sort_order", { ascending: true });
 
-      if (!imagesError && imagesData) {
+      if (!cancelled && !imagesError && imagesData) {
         const urls = imagesData.map((img) =>
-          supabase.storage.from("listing-images").getPublicUrl(img.storage_path)
-            .data.publicUrl
+          supabase.storage.from("listing-images").getPublicUrl(img.storage_path).data.publicUrl
         );
         setImageUrls(urls);
       }
 
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     }
 
-    if (params.id) {
-      load();
-    }
-  }, [params.id, router]);
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id]);
 
   function getWhatsappUrl(listing: Listing) {
     if (!listing.whatsapp_phone) return null;
@@ -112,14 +121,6 @@ export default function ListingDetailsPage() {
     const encodedMessage = encodeURIComponent(message);
     const phone = listing.whatsapp_phone.replace(/\D/g, "");
     return `https://wa.me/${phone}?text=${encodedMessage}`;
-  }
-
-  if (checkingAuth) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[var(--background)]">
-        <p className="text-[var(--surf-muted-text)]">Loading...</p>
-      </main>
-    );
   }
 
   if (loading || !listing) {
@@ -161,7 +162,7 @@ export default function ListingDetailsPage() {
   const mainImageUrl = imageUrls[selectedImageIndex] ?? imageUrls[0];
 
   return (
-    <main className="min-h-screen bg-[var(--background)] pb-24 md:pb-8">
+    <main className="min-h-screen bg-[var(--background)] pb-36 md:pb-8">
       <div className="mx-auto max-w-6xl px-4 py-6">
         {/* Above the fold: gallery + info */}
         <div className="mb-10 grid gap-8 lg:grid-cols-2">
@@ -340,7 +341,10 @@ export default function ListingDetailsPage() {
 
       {/* Sticky WhatsApp bar on mobile */}
       {whatsappUrl && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--surf-border)] bg-[var(--surf-card)] p-4 shadow-lg md:hidden">
+        <div
+          className="fixed left-0 right-0 z-40 border-t border-[var(--surf-border)] bg-[var(--surf-card)] p-4 shadow-lg md:hidden"
+          style={{ bottom: "calc(4.5rem + env(safe-area-inset-bottom, 0px))" }}
+        >
           <a
             href={whatsappUrl}
             target="_blank"

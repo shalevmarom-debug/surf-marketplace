@@ -31,6 +31,7 @@ type ListingWithImage = {
 type HomeClientProps = {
   listingsWithImage: ListingWithImage[];
   error: boolean;
+  errorMessage?: string | null;
   citiesWithCount: { city: string; count: number }[];
   defaultRegion: string;
   defaultCity: string;
@@ -41,7 +42,6 @@ type HomeClientProps = {
   defaultBrand: string;
   defaultMinPrice: string;
   defaultMaxPrice: string;
-  defaultQ: string;
   defaultIncludeSold: boolean;
   defaultSort: string;
 };
@@ -49,6 +49,7 @@ type HomeClientProps = {
 export function HomeClient({
   listingsWithImage,
   error,
+  errorMessage,
   citiesWithCount,
   defaultRegion: _defaultRegion,
   defaultCity: _defaultCity,
@@ -59,7 +60,6 @@ export function HomeClient({
   defaultBrand: _defaultBrand,
   defaultMinPrice: _defaultMinPrice,
   defaultMaxPrice: _defaultMaxPrice,
-  defaultQ: _defaultQ,
   defaultIncludeSold: _defaultIncludeSold,
   defaultSort: _defaultSort,
 }: HomeClientProps) {
@@ -81,17 +81,21 @@ export function HomeClient({
         <DesktopFiltersBar citiesWithCount={citiesWithCount} />
       </div>
 
-      {error && (
-        <p className="mb-4 text-sm text-red-600">
-          Failed to load listings.
+      {error ? (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <p className="font-medium">Failed to load listings.</p>
+          {errorMessage && <p className="mt-1 text-red-600">{errorMessage}</p>}
+          <p className="mt-2 text-red-600/90">
+            If this persists, run <code className="rounded bg-red-100 px-1">supabase/apply-public-read.sql</code> in Supabase SQL Editor.
+          </p>
+        </div>
+      ) : (
+        <p className="mb-4 text-sm text-[var(--surf-muted-text)]">
+          Showing {listingsWithImage.length} board{listingsWithImage.length !== 1 ? "s" : ""}
         </p>
       )}
 
-      <p className="mb-4 text-sm text-[var(--surf-muted-text)]">
-        Showing {listingsWithImage.length} board{listingsWithImage.length !== 1 ? "s" : ""}
-      </p>
-
-      {listingsWithImage.length === 0 && !error ? (
+      {error ? null : listingsWithImage.length === 0 ? (
         <div className="rounded-2xl border border-[var(--surf-border)] bg-[var(--surf-card)] p-8 text-center">
           <p className="text-[var(--surf-muted-text)]">No listings match your filters.</p>
         </div>
