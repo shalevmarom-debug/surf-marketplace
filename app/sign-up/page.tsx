@@ -4,7 +4,7 @@ import { FormEvent, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { isValidUsername, normalizeUsername, toInternalEmail } from "@/lib/auth";
+import { isValidUsername, normalizeUsername, toInternalEmail, isValidRecoveryEmail, normalizeRecoveryEmail } from "@/lib/auth";
 
 function SignupForm() {
   const searchParams = useSearchParams();
@@ -12,6 +12,7 @@ function SignupForm() {
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [recoveryEmail, setRecoveryEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,6 +25,13 @@ function SignupForm() {
     const un = username.trim();
     if (!isValidUsername(un)) {
       setStatus("Username: 3–50 characters, letters, numbers, underscore only.");
+      setLoading(false);
+      return;
+    }
+
+    const recovery = normalizeRecoveryEmail(recoveryEmail);
+    if (!isValidRecoveryEmail(recovery)) {
+      setStatus("Enter a valid recovery email (for password reset).");
       setLoading(false);
       return;
     }
@@ -62,6 +70,7 @@ function SignupForm() {
       username: normalizeUsername(un),
       first_name: firstName.trim() || null,
       last_name: lastName.trim() || null,
+      recovery_email: recovery,
     });
 
     if (profileError) {
@@ -112,6 +121,24 @@ function SignupForm() {
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1 text-[var(--foreground)]" htmlFor="recoveryEmail">
+            Recovery email
+          </label>
+          <input
+            id="recoveryEmail"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="For password reset only"
+            className="w-full rounded-xl border border-[var(--surf-border)] bg-[var(--background)] px-3 py-2 text-sm focus:border-[var(--surf-primary)] focus:outline-none"
+            value={recoveryEmail}
+            onChange={(e) => setRecoveryEmail(e.target.value)}
+          />
+          <p className="mt-1 text-xs text-[var(--surf-muted-text)]">
+            We&apos;ll send reset links here. You still log in with username, not email.
+          </p>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1 text-[var(--foreground)]" htmlFor="password">Password</label>

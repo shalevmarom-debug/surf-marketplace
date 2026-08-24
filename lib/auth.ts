@@ -13,3 +13,13 @@ export function isValidUsername(raw: string): boolean {
   if (s.length < 3 || s.length > 50) return false;
   return /^[a-zA-Z0-9_\u0590-\u05FF]+$/.test(s);
 }
+
+export function normalizeRecoveryEmail(raw: string): string {
+  return raw.trim().toLowerCase();
+}
+
+export function isValidRecoveryEmail(raw: string): boolean {
+  const s = normalizeRecoveryEmail(raw);
+  if (s.length > 254) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+}

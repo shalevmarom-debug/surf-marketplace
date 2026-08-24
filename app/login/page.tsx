@@ -9,6 +9,7 @@ import { toInternalEmail } from "@/lib/auth";
 function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "/";
+  const resetSuccess = searchParams.get("reset") === "success";
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -50,7 +51,21 @@ function LoginForm() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1 text-[var(--foreground)]" htmlFor="password">Password</label>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <label className="block text-sm font-medium text-[var(--foreground)]" htmlFor="password">
+              Password
+            </label>
+            <Link
+              href={
+                redirectTo !== "/"
+                  ? `/forgot-password?redirect=${encodeURIComponent(redirectTo)}`
+                  : "/forgot-password"
+              }
+              className="text-xs font-medium text-[var(--surf-primary)] hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <input
             id="password"
             type="password"
@@ -70,6 +85,11 @@ function LoginForm() {
           {loading ? "Logging in..." : "Log in"}
         </button>
       </form>
+      {resetSuccess && (
+        <p className="mt-4 text-center text-sm text-green-700 dark:text-green-400">
+          Password updated. Log in with your new password.
+        </p>
+      )}
       {status && <p className="mt-4 text-center text-sm text-[var(--surf-muted-text)]">{status}</p>}
       <p className="mt-4 text-center text-sm text-[var(--surf-muted-text)]">
         Don&apos;t have an account?{" "}

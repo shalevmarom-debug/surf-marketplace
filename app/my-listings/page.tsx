@@ -79,7 +79,15 @@ export default function MyListingsPage() {
   return (
     <main className="min-h-screen bg-[var(--background)] py-8">
       <div className="mx-auto max-w-3xl rounded-2xl border border-[var(--surf-border)] bg-[var(--surf-card)] p-6 shadow-sm">
-        <h1 className="mb-6 text-2xl font-bold text-[var(--foreground)]">My Listings</h1>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">My Listings</h1>
+          <Link
+            href="/account"
+            className="text-sm font-medium text-[var(--surf-primary)] hover:underline"
+          >
+            Account settings
+          </Link>
+        </div>
 
         {loading ? (
           <p className="text-[var(--surf-muted-text)]">Loading your listings...</p>

@@ -23,7 +23,7 @@ export function BottomNav() {
   }, []);
 
   const postHref = isLoggedIn ? "/new-listing" : "/login?redirect=/new-listing";
-  const profileHref = isLoggedIn ? "/my-listings" : "/login?redirect=/my-listings";
+  const profileHref = isLoggedIn ? "/account" : "/login?redirect=/account";
 
   return (
     <nav
@@ -48,8 +48,8 @@ export function BottomNav() {
       </Link>
       <Link
         href={profileHref}
-        className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-2 md:px-4 ${pathname === "/my-listings" ? "text-[var(--surf-primary)]" : "text-[var(--surf-muted-text)] hover:text-[var(--foreground)]"}`}
-        aria-current={pathname === "/my-listings" ? "page" : undefined}
+        className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-2 md:px-4 ${pathname === "/account" || pathname === "/my-listings" ? "text-[var(--surf-primary)]" : "text-[var(--surf-muted-text)] hover:text-[var(--foreground)]"}`}
+        aria-current={pathname === "/account" || pathname === "/my-listings" ? "page" : undefined}
       >
         <User className="h-6 w-6" strokeWidth={2} />
         <span className="text-[10px] font-medium leading-tight md:text-xs">Profile</span>
