@@ -5,6 +5,45 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
+async function establishRecoverySession(searchParams: URLSearchParams): Promise<string | null> {
+  const code = searchParams.get("code");
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    return error?.message ?? null;
+  }
+
+  const tokenHash = searchParams.get("token_hash");
+  const type = searchParams.get("type");
+  if (tokenHash && type === "recovery") {
+    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
+    return error?.message ?? null;
+  }
+
+  if (typeof window !== "undefined" && window.location.hash) {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const accessToken = hash.get("access_token");
+    const refreshToken = hash.get("refresh_token");
+    const hashType = hash.get("type");
+    if (accessToken && refreshToken && hashType === "recovery") {
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      return error?.message ?? null;
+    }
+  }
+
+  return null;
+}
+
+function hasRecoveryParams(searchParams: URLSearchParams): boolean {
+  if (searchParams.get("code") || searchParams.get("token_hash")) return true;
+  if (typeof window === "undefined") return false;
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  return hash.get("type") === "recovery" && !!hash.get("access_token");
+}
+
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -19,24 +58,27 @@ function ResetPasswordForm() {
     let cancelled = false;
 
     async function initSession() {
-      const code = searchParams.get("code");
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error && !cancelled) {
-          setStatus(`Invalid or expired reset link: ${error.message}`);
-          setChecking(false);
-          return;
-        }
+      const hadRecoveryParams = hasRecoveryParams(searchParams);
+      const exchangeError = await establishRecoverySession(searchParams);
+
+      if (exchangeError && !cancelled) {
+        setStatus(`Invalid or expired reset link: ${exchangeError}`);
+        setChecking(false);
+        return;
       }
 
       const {
         data: { session },
       } = await supabase.auth.getSession();
+
       if (!cancelled) {
-        setReady(!!session);
-        setChecking(false);
-        if (!session && !code) {
+        if (session) {
+          setReady(true);
+          setChecking(false);
+          setStatus(null);
+        } else if (!hadRecoveryParams) {
           setStatus("Open the reset link from your email, or request a new one.");
+          setChecking(false);
         }
       }
     }
@@ -53,8 +95,30 @@ function ResetPasswordForm() {
 
     initSession();
 
+    const timeout = window.setTimeout(() => {
+      if (!cancelled) {
+        setChecking((prev) => {
+          if (prev) {
+            supabase.auth.getSession().then(({ data: { session } }) => {
+              if (!cancelled && session) {
+                setReady(true);
+                setStatus(null);
+              } else if (!cancelled && !session && hasRecoveryParams(searchParams)) {
+                setStatus("Invalid or expired reset link. Request a new one.");
+              } else if (!cancelled && !session) {
+                setStatus("Open the reset link from your email, or request a new one.");
+              }
+              setChecking(false);
+            });
+          }
+          return false;
+        });
+      }
+    }, 2500);
+
     return () => {
       cancelled = true;
+      window.clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, [searchParams]);
