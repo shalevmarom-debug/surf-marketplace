@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 async function establishRecoverySession(searchParams: URLSearchParams): Promise<string | null> {
@@ -45,7 +45,6 @@ function hasRecoveryParams(searchParams: URLSearchParams): boolean {
 }
 
 function ResetPasswordForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -137,16 +136,50 @@ function ResetPasswordForm() {
     setLoading(true);
     setStatus(null);
 
-    const { error } = await supabase.auth.updateUser({ password });
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    if (error) {
-      setStatus(`Error: ${error.message}`);
+      if (!session?.access_token) {
+        setStatus("Session expired. Request a new reset link.");
+        setLoading(false);
+        return;
+      }
+
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 20000);
+
+      const response = await fetch("/api/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ password }),
+        signal: controller.signal,
+      });
+
+      window.clearTimeout(timeout);
+
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+
+      if (!response.ok) {
+        setStatus(data?.error ? `Error: ${data.error}` : "Could not update password.");
+        setLoading(false);
+        return;
+      }
+
+      void supabase.auth.signOut();
+      window.location.href = "/login?reset=success";
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setStatus("Request timed out. Check your connection and try again.");
+      } else {
+        setStatus("Could not update password. Please try again.");
+      }
       setLoading(false);
-      return;
     }
-
-    await supabase.auth.signOut();
-    router.push("/login?reset=success");
   }
 
   if (checking) {
