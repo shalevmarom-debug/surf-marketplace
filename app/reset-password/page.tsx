@@ -52,6 +52,16 @@ function ResetPasswordForm() {
   const [checking, setChecking] = useState(true);
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+
+  function captureSession(session: { access_token: string } | null) {
+    if (session?.access_token) {
+      setAccessToken(session.access_token);
+      setReady(true);
+      setChecking(false);
+      setStatus(null);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -72,9 +82,7 @@ function ResetPasswordForm() {
 
       if (!cancelled) {
         if (session) {
-          setReady(true);
-          setChecking(false);
-          setStatus(null);
+          captureSession(session);
         } else if (!hadRecoveryParams) {
           setStatus("Open the reset link from your email, or request a new one.");
           setChecking(false);
@@ -86,9 +94,7 @@ function ResetPasswordForm() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
-        setReady(true);
-        setChecking(false);
-        setStatus(null);
+        captureSession(session);
       }
     });
 
@@ -100,8 +106,7 @@ function ResetPasswordForm() {
           if (prev) {
             supabase.auth.getSession().then(({ data: { session } }) => {
               if (!cancelled && session) {
-                setReady(true);
-                setStatus(null);
+                captureSession(session);
               } else if (!cancelled && !session && hasRecoveryParams(searchParams)) {
                 setStatus("Invalid or expired reset link. Request a new one.");
               } else if (!cancelled && !session) {
@@ -136,25 +141,22 @@ function ResetPasswordForm() {
     setLoading(true);
     setStatus(null);
 
+    const token = accessToken;
+    if (!token) {
+      setStatus("Session expired. Request a new reset link.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        setStatus("Session expired. Request a new reset link.");
-        setLoading(false);
-        return;
-      }
-
       const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 20000);
+      const timeout = window.setTimeout(() => controller.abort(), 15000);
 
       const response = await fetch("/api/reset-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ password }),
         signal: controller.signal,
@@ -170,11 +172,14 @@ function ResetPasswordForm() {
         return;
       }
 
+      setStatus("Password updated! Redirecting to login...");
       void supabase.auth.signOut();
-      window.location.href = "/login?reset=success";
+      window.setTimeout(() => {
+        window.location.assign("/login?reset=success");
+      }, 300);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
-        setStatus("Request timed out. Check your connection and try again.");
+        setStatus("Request timed out. Check Vercel has SUPABASE_SERVICE_ROLE_KEY, then try again.");
       } else {
         setStatus("Could not update password. Please try again.");
       }
