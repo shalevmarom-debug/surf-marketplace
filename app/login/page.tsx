@@ -4,7 +4,7 @@ import { FormEvent, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { toInternalEmail } from "@/lib/auth";
+import { normalizeUsername } from "@/lib/auth";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -20,19 +20,59 @@ function LoginForm() {
     setLoading(true);
     setStatus(null);
 
-    const internalEmail = toInternalEmail(username);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: internalEmail,
-      password,
-    });
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 15000);
 
-    if (error) {
-      setStatus(`Error: ${error.message}`);
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: normalizeUsername(username),
+          password,
+        }),
+        signal: controller.signal,
+      });
+
+      window.clearTimeout(timeout);
+
+      const data = (await response.json().catch(() => null)) as {
+        error?: string;
+        access_token?: string;
+        refresh_token?: string;
+      } | null;
+
+      if (!response.ok || !data?.access_token || !data?.refresh_token) {
+        setStatus(data?.error ? `Error: ${data.error}` : "Login failed.");
+        setLoading(false);
+        return;
+      }
+
+      const setSessionResult = await Promise.race([
+        supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        }),
+        new Promise<{ error: { message: string } }>((resolve) =>
+          window.setTimeout(() => resolve({ error: { message: "timeout" } }), 5000)
+        ),
+      ]);
+
+      if (setSessionResult.error && setSessionResult.error.message !== "timeout") {
+        setStatus(`Error: ${setSessionResult.error.message}`);
+        setLoading(false);
+        return;
+      }
+
+      window.location.assign(redirectTo);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setStatus("Login timed out. Check your connection and try again.");
+      } else {
+        setStatus("Login failed. Please try again.");
+      }
       setLoading(false);
-      return;
     }
-
-    window.location.href = redirectTo;
   }
 
   return (
