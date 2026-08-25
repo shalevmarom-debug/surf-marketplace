@@ -46,6 +46,7 @@ export const BRAND_MAX = 100;
 export const CITY_MAX = 100;
 export const PRICE_MIN = 0;
 export const PRICE_MAX = 15000;
+export const PRICE_FILTER_STEP = 50;
 export const VOLUME_L_MIN = 0;
 export const VOLUME_L_MAX = 200;
 export const IMAGE_FILE_SIZE_MAX = 5 * 1024 * 1024; // 5MB

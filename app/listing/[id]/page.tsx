@@ -114,13 +114,20 @@ export default function ListingDetailsPage() {
   }, [params.id]);
 
   function getWhatsappUrl(listing: Listing) {
-    if (!listing.whatsapp_phone) return null;
+    if (!listing.whatsapp_phone || listing.sold_at) return null;
     const currentUrl =
       typeof window !== "undefined" ? window.location.href : "";
     const message = `Hi, I saw your surfboard listing "${listing.title}" on Surf Marketplace. Is it still available? ${currentUrl}`;
     const encodedMessage = encodeURIComponent(message);
     const phone = listing.whatsapp_phone.replace(/\D/g, "");
     return `https://wa.me/${phone}?text=${encodedMessage}`;
+  }
+
+  function getSoldNotifyUrl(listing: Listing) {
+    const currentUrl =
+      typeof window !== "undefined" ? window.location.href : "";
+    const message = `עדכון: הגלשן "${listing.title}" נמכר. תודה על הפנייה!\n${currentUrl}`;
+    return `https://wa.me/?text=${encodeURIComponent(message)}`;
   }
 
   if (loading || !listing) {
@@ -149,8 +156,13 @@ export default function ListingDetailsPage() {
 
   async function markSold() {
     if (!currentUserId || currentUserId !== listing!.user_id) return;
+    const confirmed = window.confirm("Mark this listing as sold?");
+    if (!confirmed) return;
     const { error } = await supabase.from("listings").update({ sold_at: new Date().toISOString() }).eq("id", listing!.id).eq("user_id", currentUserId);
-    if (!error) setListing((prev) => (prev ? { ...prev, sold_at: new Date().toISOString() } : null));
+    if (!error) {
+      setListing((prev) => (prev ? { ...prev, sold_at: new Date().toISOString() } : null));
+      setStatus("Listing marked as sold. You can notify interested buyers below.");
+    }
   }
 
   async function reportListing(reason: string) {
@@ -159,6 +171,8 @@ export default function ListingDetailsPage() {
   }
 
   const whatsappUrl = getWhatsappUrl(listing);
+  const soldNotifyUrl = listing.sold_at ? getSoldNotifyUrl(listing) : null;
+  const isOwner = currentUserId === listing.user_id;
   const mainImageUrl = imageUrls[selectedImageIndex] ?? imageUrls[0];
 
   return (
@@ -267,8 +281,23 @@ export default function ListingDetailsPage() {
                   Contact on WhatsApp
                 </a>
               )}
+              {listing.sold_at && !isOwner && (
+                <span className="inline-flex items-center justify-center rounded-xl bg-amber-100 px-6 py-3 text-base font-semibold text-amber-900">
+                  This board has been sold
+                </span>
+              )}
+              {listing.sold_at && isOwner && soldNotifyUrl && (
+                <a
+                  href={soldNotifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-xl bg-green-500 px-6 py-3 text-base font-semibold text-white hover:bg-green-600"
+                >
+                  Send sold update on WhatsApp
+                </a>
+              )}
               <ReportButton listingId={listing.id} onReport={reportListing} />
-              {currentUserId === listing.user_id && !listing.sold_at && (
+              {isOwner && !listing.sold_at && (
                 <button
                   type="button"
                   onClick={markSold}
@@ -352,6 +381,21 @@ export default function ListingDetailsPage() {
             className="flex w-full items-center justify-center rounded-xl bg-green-500 py-3.5 text-base font-semibold text-white hover:bg-green-600"
           >
             Contact on WhatsApp
+          </a>
+        </div>
+      )}
+      {listing.sold_at && isOwner && soldNotifyUrl && (
+        <div
+          className="fixed left-0 right-0 z-40 border-t border-[var(--surf-border)] bg-[var(--surf-card)] p-4 shadow-lg md:hidden"
+          style={{ bottom: "calc(4.5rem + env(safe-area-inset-bottom, 0px))" }}
+        >
+          <a
+            href={soldNotifyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center justify-center rounded-xl bg-green-500 py-3.5 text-base font-semibold text-white hover:bg-green-600"
+          >
+            Send sold update on WhatsApp
           </a>
         </div>
       )}

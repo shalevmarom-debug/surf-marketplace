@@ -7,6 +7,7 @@ import {
   CONDITIONS,
   FIN_SETUPS,
   CONSTRUCTIONS,
+  PRICE_FILTER_STEP,
 } from "@/lib/validations/listing";
 
 export const filterInputClass =
@@ -135,6 +136,7 @@ export function MinPriceField({
         id={id}
         type="number"
         min={0}
+        step={PRICE_FILTER_STEP}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="0"
@@ -162,6 +164,7 @@ export function MaxPriceField({
         id={id}
         type="number"
         min={0}
+        step={PRICE_FILTER_STEP}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Any"
