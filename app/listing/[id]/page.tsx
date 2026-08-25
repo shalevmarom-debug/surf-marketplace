@@ -177,7 +177,20 @@ export default function ListingDetailsPage() {
   }
 
   async function reportListing(reason: string) {
-    await supabase.from("reports").insert({ listing_id: listing!.id, reporter_id: currentUserId ?? undefined, reason });
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    const response = await fetch("/api/report-listing", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ listingId: listing!.id, reason: reason.trim() || "Report" }),
+    });
+    if (!response.ok) {
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      setStatus(data?.error ? `Error: ${data.error}` : "Could not submit report.");
+      return;
+    }
     setStatus("Report submitted. Thank you.");
   }
 

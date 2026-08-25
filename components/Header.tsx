@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { APP_NAME } from "@/lib/constants";
-import { Waves, ArrowLeft, Plus, List, LogOut, User } from "lucide-react";
+import { Waves, ArrowLeft, Plus, List, LogOut, User, Shield } from "lucide-react";
 
 type UserInfo = {
   id: string;
@@ -33,6 +33,11 @@ async function readLocalSession() {
     ),
   ]);
   return sessionResult.data.session;
+}
+
+function isAdminUserId(userId: string | null | undefined): boolean {
+  const adminId = process.env.NEXT_PUBLIC_ADMIN_USER_ID;
+  return !!adminId && !!userId && userId === adminId;
 }
 
 export default function Header() {
@@ -90,6 +95,7 @@ export default function Header() {
   }
 
   const displayLabel = user?.firstName || (user?.username ? `@${user.username}` : null);
+  const isAdmin = isAdminUserId(user?.id);
 
   return (
     <header ref={headerRef} className="sticky top-0 z-50 border-b border-[var(--surf-border)] bg-[var(--surf-card)] shadow-sm">
@@ -125,6 +131,16 @@ export default function Header() {
                 <span className="hidden max-w-[120px] truncate text-xs font-medium text-[var(--surf-muted-text)] sm:inline md:max-w-[160px]">
                   {displayLabel}
                 </span>
+              )}
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="flex items-center justify-center rounded-lg p-2 text-[var(--foreground)] hover:bg-[var(--surf-border)] sm:px-3 sm:py-2"
+                  aria-label="Admin"
+                >
+                  <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="hidden sm:inline">Admin</span>
+                </Link>
               )}
               <Link
                 href="/new-listing"
