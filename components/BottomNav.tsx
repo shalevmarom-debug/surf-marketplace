@@ -12,8 +12,13 @@ export function BottomNav() {
 
   useEffect(() => {
     async function checkAuth() {
-      const { data } = await supabase.auth.getUser();
-      setIsLoggedIn(!!data.user);
+      const sessionResult = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise<Awaited<ReturnType<typeof supabase.auth.getSession>>>((resolve) =>
+          window.setTimeout(() => resolve({ data: { session: null }, error: null }), 3000)
+        ),
+      ]);
+      setIsLoggedIn(!!sessionResult.data.session?.user);
     }
     checkAuth();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

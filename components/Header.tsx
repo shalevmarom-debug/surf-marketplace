@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { APP_NAME } from "@/lib/constants";
-import { Waves, ArrowLeft, Plus, List, LogOut } from "lucide-react";
+import { Waves, ArrowLeft, Plus, List, LogOut, User } from "lucide-react";
 
 type UserInfo = {
   id: string;
@@ -25,10 +25,19 @@ async function loadProfile(userId: string): Promise<{ username: string | null; f
   };
 }
 
+async function readLocalSession() {
+  const sessionResult = await Promise.race([
+    supabase.auth.getSession(),
+    new Promise<Awaited<ReturnType<typeof supabase.auth.getSession>>>((resolve) =>
+      window.setTimeout(() => resolve({ data: { session: null }, error: null }), 3000)
+    ),
+  ]);
+  return sessionResult.data.session;
+}
+
 export default function Header() {
   const pathname = usePathname();
   const [user, setUser] = useState<UserInfo>(null);
-  const [loading, setLoading] = useState(true);
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -43,30 +52,41 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    async function loadUser() {
-      const { data } = await supabase.auth.getUser();
-      if (data.user) {
-        const profile = await loadProfile(data.user.id);
-        setUser({ id: data.user.id, username: profile.username, firstName: profile.firstName });
-      } else {
-        setUser(null);
+    let cancelled = false;
+
+    async function applySession(userId: string | undefined) {
+      if (!userId) {
+        if (!cancelled) setUser(null);
+        return;
       }
-      setLoading(false);
+      const profile = await loadProfile(userId);
+      if (!cancelled) {
+        setUser({ id: userId, username: profile.username, firstName: profile.firstName });
+      }
     }
+
+    async function loadUser() {
+      const session = await readLocalSession();
+      await applySession(session?.user?.id);
+    }
+
     loadUser();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        const profile = await loadProfile(session.user.id);
-        setUser({ id: session.user.id, username: profile.username, firstName: profile.firstName });
-      } else {
-        setUser(null);
-      }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      void applySession(session?.user?.id);
     });
-    return () => subscription.unsubscribe();
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function handleLogout() {
     await supabase.auth.signOut();
+    setUser(null);
   }
 
   const displayLabel = user?.firstName || (user?.username ? `@${user.username}` : null);
@@ -99,9 +119,7 @@ export default function Header() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          {loading ? (
-            <span className="text-xs text-[var(--surf-muted-text)]">...</span>
-          ) : user ? (
+          {user ? (
             <>
               {displayLabel && (
                 <span className="hidden max-w-[120px] truncate text-xs font-medium text-[var(--surf-muted-text)] sm:inline md:max-w-[160px]">
@@ -124,6 +142,14 @@ export default function Header() {
                 <List className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="hidden sm:inline">My listings</span>
               </Link>
+              <Link
+                href="/account"
+                className="flex items-center justify-center rounded-lg p-2 text-[var(--foreground)] hover:bg-[var(--surf-border)] sm:px-3 sm:py-2"
+                aria-label="Account"
+              >
+                <User className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:inline">Account</span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="flex items-center justify-center rounded-lg p-2 text-[var(--foreground)] hover:bg-[var(--surf-border)] sm:px-3 sm:py-2"
@@ -145,7 +171,7 @@ export default function Header() {
               </Link>
               <Link
                 href="/login"
-                className="flex items-center justify-center rounded-lg p-2 text-sm font-medium text-[var(--surf-primary)] hover:bg-[var(--surf-border)] sm:px-3 sm:py-2"
+                className="flex items-center justify-center rounded-lg px-2 py-2 text-sm font-medium text-[var(--surf-primary)] hover:bg-[var(--surf-border)] sm:px-3 sm:py-2"
               >
                 Sign in
               </Link>
