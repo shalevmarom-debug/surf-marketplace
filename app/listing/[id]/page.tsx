@@ -165,6 +165,17 @@ export default function ListingDetailsPage() {
     }
   }
 
+  async function unmarkSold() {
+    if (!currentUserId || currentUserId !== listing!.user_id) return;
+    const confirmed = window.confirm("Mark this listing as available again?");
+    if (!confirmed) return;
+    const { error } = await supabase.from("listings").update({ sold_at: null }).eq("id", listing!.id).eq("user_id", currentUserId);
+    if (!error) {
+      setListing((prev) => (prev ? { ...prev, sold_at: null } : null));
+      setStatus("Listing is available again.");
+    }
+  }
+
   async function reportListing(reason: string) {
     await supabase.from("reports").insert({ listing_id: listing!.id, reporter_id: currentUserId ?? undefined, reason });
     setStatus("Report submitted. Thank you.");
@@ -286,15 +297,26 @@ export default function ListingDetailsPage() {
                   This board has been sold
                 </span>
               )}
-              {listing.sold_at && isOwner && soldNotifyUrl && (
-                <a
-                  href={soldNotifyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center rounded-xl bg-green-500 px-6 py-3 text-base font-semibold text-white hover:bg-green-600"
-                >
-                  Send sold update on WhatsApp
-                </a>
+              {listing.sold_at && isOwner && (
+                <>
+                  {soldNotifyUrl && (
+                    <a
+                      href={soldNotifyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center rounded-xl bg-green-500 px-6 py-3 text-base font-semibold text-white hover:bg-green-600"
+                    >
+                      Send sold update on WhatsApp
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={unmarkSold}
+                    className="rounded-xl border border-amber-500 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50"
+                  >
+                    Undo sold
+                  </button>
+                </>
               )}
               <ReportButton listingId={listing.id} onReport={reportListing} />
               {isOwner && !listing.sold_at && (
@@ -384,19 +406,28 @@ export default function ListingDetailsPage() {
           </a>
         </div>
       )}
-      {listing.sold_at && isOwner && soldNotifyUrl && (
+      {listing.sold_at && isOwner && (
         <div
-          className="fixed left-0 right-0 z-40 border-t border-[var(--surf-border)] bg-[var(--surf-card)] p-4 shadow-lg md:hidden"
+          className="fixed left-0 right-0 z-40 flex flex-col gap-2 border-t border-[var(--surf-border)] bg-[var(--surf-card)] p-4 shadow-lg md:hidden"
           style={{ bottom: "calc(4.5rem + env(safe-area-inset-bottom, 0px))" }}
         >
-          <a
-            href={soldNotifyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center justify-center rounded-xl bg-green-500 py-3.5 text-base font-semibold text-white hover:bg-green-600"
+          {soldNotifyUrl && (
+            <a
+              href={soldNotifyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full items-center justify-center rounded-xl bg-green-500 py-3.5 text-base font-semibold text-white hover:bg-green-600"
+            >
+              Send sold update on WhatsApp
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={unmarkSold}
+            className="flex w-full items-center justify-center rounded-xl border border-amber-500 py-3 text-base font-semibold text-amber-700 hover:bg-amber-50"
           >
-            Send sold update on WhatsApp
-          </a>
+            Undo sold
+          </button>
         </div>
       )}
     </main>

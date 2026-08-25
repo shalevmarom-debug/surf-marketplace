@@ -106,6 +106,28 @@ export default function MyListingsPage() {
     setStatus("Marked as sold. You can notify interested buyers on WhatsApp.");
   }
 
+  async function handleUnmarkSold(id: string) {
+    if (!userId) return;
+    const confirmed = window.confirm("Mark this listing as available again?");
+    if (!confirmed) return;
+
+    const { error } = await supabase
+      .from("listings")
+      .update({ sold_at: null })
+      .eq("id", id)
+      .eq("user_id", userId);
+
+    if (error) {
+      setStatus(`Error restoring listing: ${error.message}`);
+      return;
+    }
+
+    setListings((prev) =>
+      prev.map((listing) => (listing.id === id ? { ...listing, sold_at: null } : listing))
+    );
+    setStatus("Listing is available again.");
+  }
+
   if (checkingAuth) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[var(--background)]">
@@ -181,14 +203,23 @@ export default function MyListingsPage() {
                     </>
                   )}
                   {listing.sold_at && (
-                    <a
-                      href={getSoldNotifyUrl(listing.title, listing.id)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded bg-green-600 px-2 py-1 text-xs font-semibold text-white hover:bg-green-700"
-                    >
-                      Notify sold
-                    </a>
+                    <>
+                      <a
+                        href={getSoldNotifyUrl(listing.title, listing.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded bg-green-600 px-2 py-1 text-xs font-semibold text-white hover:bg-green-700"
+                      >
+                        Notify sold
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleUnmarkSold(listing.id)}
+                        className="rounded border border-amber-500 px-2 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50"
+                      >
+                        Undo sold
+                      </button>
+                    </>
                   )}
                   <button
                     type="button"
